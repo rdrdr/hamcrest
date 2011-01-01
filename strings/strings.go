@@ -3,6 +3,7 @@ package strings
 import (
 	"fmt"
 	"hamcrest"
+	"regexp"
 	"strings"
 )
 
@@ -43,7 +44,7 @@ func HasPrefix(prefix string) *hamcrest.Matcher {
 	return hamcrest.NewMatcher(description, match)
 }
 
-// Matches strings that begin with the given prefix.
+// Matches strings that end with the given prefix.
 func HasSuffix(suffix string) *hamcrest.Matcher {
 	description := hamcrest.NewDescription("HasSuffix[\"%v\"]", suffix)
 	match := func (actual interface{}) *hamcrest.Result {
@@ -64,6 +65,7 @@ func HasSuffix(suffix string) *hamcrest.Matcher {
 }
 
 
+// Matches strings that contain the given substring.
 func Contains(substring string) *hamcrest.Matcher {
 	description := hamcrest.NewDescription("Contains[\"%v\"]", substring)
 	match := func (actual interface{}) *hamcrest.Result {
@@ -80,3 +82,39 @@ func Contains(substring string) *hamcrest.Matcher {
 	}
 	return hamcrest.NewMatcher(description, match)
 }
+
+// Matches strings that contain the given regexp pattern, using
+// the same syntax as the standard regexp package.
+func HasPattern(pattern string) *hamcrest.Matcher {
+	re := regexp.MustCompile(pattern)
+	description := hamcrest.NewDescription("HasPattern[\"%v\"]", pattern)
+	match := func (actual interface{}) *hamcrest.Result {
+		if s, ok := actual.(string); ok {
+			if found := re.FindStringIndex(s); found != nil {
+				start, end := found[0], found[1]
+				because := hamcrest.NewDescription(
+					"pattern '%v' found at substring[%v:%v]='%v'",
+						pattern, start, end, s[start:end])
+				return hamcrest.NewResult(true, because)
+			}
+			because := hamcrest.NewDescription(
+				"pattern '%v' not found in '%v'", pattern, actual)
+			return hamcrest.NewResult(false, because)
+		} else if b, ok := actual.([]byte); ok {
+			if found := re.FindIndex(b); found != nil {
+				start, end := found[0], found[1]
+				because := hamcrest.NewDescription(
+					"pattern '%v' found at subsequence[%v:%v]='%v'",
+						pattern, start, end, b[start:end])
+				return hamcrest.NewResult(true, because)
+			}
+			because := hamcrest.NewDescription(
+				"pattern '%v' not found in sequence '%v'", pattern, actual)
+			return hamcrest.NewResult(false, because)
+		}
+		because := hamcrest.NewDescription("[%v] is not a string or byte array", actual)
+		return hamcrest.NewResult(false, because)
+	}
+	return hamcrest.NewMatcher(description, match)
+}
+

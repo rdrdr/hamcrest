@@ -85,53 +85,50 @@ func Is(matcher *Matcher) *Matcher {
 
 // Helper function for Nil/NonNil
 func _detectNil(actual interface{}) bool {
-	switch f := actual.(type) {
-	// TODO:  consider including specific types, like:
-	// case *reflect.UnsafePointerValue: return f.Addr() == 0 ???
-	default:
-		if couldBeNil, canAsk := f.(_CanAskIsNil); canAsk {
-			return couldBeNil.IsNil()
-		}
+	if actual == nil {
+		return true
+	}
+	if ptr, ok := reflect.NewValue(actual).(*reflect.PtrValue); ok {
+		return ptr.IsNil()
 	}
 	return false
 }
 type _CanAskIsNil interface { IsNil() bool }
+type _CanAskAddr interface { Addr() uintptr }
 
 
-// Returns a Matcher that matches if the actual value is the
-// appropriate nil value for its type.  Note that this is
-// not equivalent to EqualTo(nil), as that only matches the
-// given type of nil; different types have different
-// (non-equal) nil values!
+// Returns a Matcher that matches if the actual value is nil
+// or the nil value of its type.  (Note that this is *not*
+// equivalent to EqualTo(nil).)
 func Nil() *Matcher {
 	return _Nil
 }
 var _Nil *Matcher // singleton
 func init() {
+	wasNilDescription := NewDescription("was nil")
 	match := func (actual interface{}) *Result {
 		if _detectNil(actual) {
-			return NewResult(true, NewDescription("was nil"))
+			return NewResult(true, wasNilDescription)
 		}
-		return NewResult(false, NewDescription("[%v] was not nil", actual))
+		return NewResult(false, NewDescription("[%#v] was not nil", actual))
 	}
 	_Nil = NewMatcher(NewDescription("matches nil"), match)
 }
 
-// Returns a Matcher that matches if the actual value is not
-// the appropriate nil value for its type.  Note that this is
-// not equivalent to Not(EqualTo(nil)), as that onlys matches
-// the given type of nil; different types have different
-// (non-equal) nil values!
+// Returns a Matcher that matches if the actual value is 
+// neither nil nor the nil value of its type.  (Note that
+// this is *not* equivalent to Not(EqualTo(nil)).)
 func NonNil() *Matcher {
 	return _NonNil
 }
 var _NonNil *Matcher
 func init() {
+	wasNilDescription := NewDescription("was nil")
 	match := func (actual interface{}) *Result {
 		if _detectNil(actual) {
-			return NewResult(false, NewDescription("was nil"))
+			return NewResult(false, wasNilDescription)
 		}
-		return NewResult(true, NewDescription("[%v] was not nil", actual))
+		return NewResult(true, NewDescription("[%#v] was not nil", actual))
 	}
 	_NonNil = NewMatcher(NewDescription("matches non-nil"), match)
 }
@@ -358,3 +355,51 @@ func (self *IfClause) Then(consequent *Matcher) *Matcher {
 	}
 	return NewMatcher(description, match)
 }
+
+
+// First part of a builder for an if-and-only-if expression:
+//     matcher := IfAndOnlyIf(AntecedentMatcher).Then(ConsequentMatcher)
+// This is logically equivalent to:
+//     Either(Not(AntecedentMatcher)).Xor(ConsequentMatcher)
+// But may be more readable in practice.
+func IfAndOnlyIf(antecedent *Matcher) *IfAndOnlyIfClause {
+	return &IfAndOnlyIfClause{antecedent:antecedent}
+}
+
+// Temporary builder state in the middle of constructing
+// an IfAndOnlyIf/Then clause.
+type IfAndOnlyIfClause struct {
+	antecedent *Matcher
+}
+
+// Constructs an if-and-only-if/then matcher:
+//     matcher := IfAndOnlyIf(AntecedentMatcher).Then(ConsequentMatcher)
+// that matches when both or neither of the Antecedent and the
+// Consequent match.  Note that this is logically equivalent to:
+//     Either(Not(AntecedentMatcher)).Xor(ConsequentMatcher)
+// But may be more readable in practice.
+func (self *IfAndOnlyIfClause) Then(consequent *Matcher) *Matcher {
+	antecedent := self.antecedent
+	description := NewDescription("if and only if [%v] then [%v]", antecedent, consequent)
+	match := func(v interface{}) *Result {
+		result1 := antecedent.Match(v)
+		result2 := consequent.Match(v)
+		if result1.Matched() {
+			if result2.Matched() {
+				because := NewDescription("Matched because both parts of 'IfAndOnlyIf/Then' matched")
+				return NewResult(true, because).WithCauses(result1, result2)
+			}
+			because := NewDescription("Failed because only the first part of 'IfAndOnlyIf/Then' matched")
+			return NewResult(false, because).WithCauses(result1, result2)
+		}
+		if result2.Matched() {
+			because := NewDescription("Failed because only the second part of 'IfAndOnlyIf/Then' matched")
+			return NewResult(false, because).WithCauses(result1, result2)
+		}
+		because := NewDescription("Matched because neither part of 'IfAndOnlyIf/Then' matched")
+		return NewResult(true, because).WithCauses(result1, result2)
+	}
+	return NewMatcher(description, match)
+}
+
+

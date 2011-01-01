@@ -35,10 +35,14 @@ type Asserter interface {
 	CheckThat(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
 	CheckTrue(value bool, messages ...interface{}) *hamcrest.Result
 	CheckFalse(value bool, messages ...interface{}) *hamcrest.Result
+	CheckNil(value interface{}, messages ...interface{}) *hamcrest.Result
+	CheckNonNil(value interface{}, messages ...interface{}) *hamcrest.Result
 	
 	AssertThat(value interface{}, matcher *hamcrest.Matcher)
 	AssertTrue(value bool, messages ...interface{})
 	AssertFalse(value bool, messages ...interface{})
+	AssertNil(value interface{}, messages ...interface{})
+	AssertNonNil(value interface{}, messages ...interface{})
 }
 
 // Convenience function to create an Asserter from a Logger.
@@ -190,11 +194,11 @@ func (self *_Asserter) CheckFalse(value bool, comments ...interface{}) *hamcrest
 	return self.CheckThat(value, hamcrest.False().AddComments(comments...))
 }
 
-func (self *_Asserter) CheckNil(value bool, comments ...interface{}) *hamcrest.Result {
+func (self *_Asserter) CheckNil(value interface{}, comments ...interface{}) *hamcrest.Result {
 	return self.CheckThat(value, hamcrest.Nil().AddComments(comments...))
 }
 
-func (self *_Asserter) CheckNonNil(value bool, comments ...interface{}) *hamcrest.Result {
+func (self *_Asserter) CheckNonNil(value interface{}, comments ...interface{}) *hamcrest.Result {
 	return self.CheckThat(value, hamcrest.NonNil().AddComments(comments...))
 }
 
@@ -210,10 +214,10 @@ func (self *_Asserter) AssertFalse(value bool, comments ...interface{}) {
 	self.AssertThat(value, hamcrest.False().AddComments(comments...))
 }
 
-func (self *_Asserter) AssertNil(value bool, comments ...interface{}) {
+func (self *_Asserter) AssertNil(value interface{}, comments ...interface{}) {
 	self.AssertThat(value, hamcrest.Nil().AddComments(comments...))
 }
 
-func (self *_Asserter) AssertNonNil(value bool, comments ...interface{}) {
+func (self *_Asserter) AssertNonNil(value interface{}, comments ...interface{}) {
 	self.AssertThat(value, hamcrest.NonNil().AddComments(comments...))
 }
