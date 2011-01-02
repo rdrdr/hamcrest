@@ -22,6 +22,11 @@ func (self *_Stringer) String() string {
 	return string(self.s)
 }
 
+type _GoStringer struct { s string }
+func (self *_GoStringer) GoString() string {
+	return string(self.s)
+}
+
 func Test_ToString_onTypesThatImplementStringer(t *testing.T) {
 	stringer := &_Stringer{s:"123"}
 	we := asserter.Using(t)

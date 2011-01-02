@@ -119,12 +119,6 @@ underlying matcher. The following assertions are equivalent:
     we.AssertThat(theBiscuit, EqualTo(myBiscuit));
     we.AssertThat(theBiscuit, Is(EqualTo(myBiscuit)));
 
-TODO:  Make this statement true:
-The last form is allowed since ``is`` wraps non-matcher arguments with
-``equalTo``. Other matchers that take matchers as arguments provide similar
-shortcuts, wrapping non-matcher arguments in ``equalTo``.
-
-
 Custom matchers
 ===============
 

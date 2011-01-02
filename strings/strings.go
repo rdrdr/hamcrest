@@ -24,6 +24,23 @@ func ToString(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 	return hamcrest.NewMatcher(description, match)
 }
 
+
+// Applies the given matcher to the result of writing the input object's
+// to a string by using fmt.Sprintf("%#v", object).
+func ToGoString(matcher *hamcrest.Matcher) *hamcrest.Matcher {
+	description := hamcrest.NewDescription("ToGoString[%v]", matcher)
+	match := func(actual interface{}) *hamcrest.Result {
+		s := fmt.Sprintf("%#v", actual)
+		result := matcher.Match(s)
+		because := hamcrest.NewDescription("GoString() was %#v", s)
+		if result.Matched() {
+			return hamcrest.NewResult(true, because).WithCauses(result)
+		}
+		return hamcrest.NewResult(false, because).WithCauses(result)
+	}
+	return hamcrest.NewMatcher(description, match)
+}
+
 // Matches strings that begin with the given prefix.
 func HasPrefix(prefix string) *hamcrest.Matcher {
 	description := hamcrest.NewDescription("HasPrefix[\"%v\"]", prefix)

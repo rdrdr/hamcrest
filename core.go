@@ -26,7 +26,6 @@ var _True *Matcher // singleton
 func init() {
 	trueDescription := NewDescription("was true")
 	falseDescription := NewDescription("was not true")
-	errorDescription := NewDescription("was not bool")
 	match := func (actual interface{}) *Result {
 		if b, ok := actual.(bool); ok {
 			if b {
@@ -34,7 +33,7 @@ func init() {
 			}
 			return NewResult(false, falseDescription)
 		}
-		return NewResult(false, errorDescription)
+		return NewResult(false, NewDescription("[%v] was not bool", actual))
 	}
 	_True = NewMatcher(NewDescription("matches true"), match)
 }
@@ -47,7 +46,6 @@ var _False *Matcher // singleton
 func init() {
 	trueDescription := NewDescription("was not false")
 	falseDescription := NewDescription("was false")
-	errorDescription := NewDescription("was not bool")
 	match := func (actual interface{}) *Result {
 		if b, ok := actual.(bool); ok {
 			if b {
@@ -55,7 +53,7 @@ func init() {
 			}
 			return NewResult(true, falseDescription)
 		}
-		return NewResult(false, errorDescription)
+		return NewResult(false, NewDescription("[%v] was not bool", actual))
 	}
 	_False = NewMatcher(NewDescription("matches false"), match)
 }
@@ -88,13 +86,12 @@ func _detectNil(actual interface{}) bool {
 	if actual == nil {
 		return true
 	}
-	if ptr, ok := reflect.NewValue(actual).(*reflect.PtrValue); ok {
-		return ptr.IsNil()
+	if value, ok := reflect.NewValue(actual).(_CanAskIsNil); ok {
+		return value.IsNil()
 	}
 	return false
 }
 type _CanAskIsNil interface { IsNil() bool }
-type _CanAskAddr interface { Addr() uintptr }
 
 
 // Returns a Matcher that matches if the actual value is nil
@@ -110,7 +107,7 @@ func init() {
 		if _detectNil(actual) {
 			return NewResult(true, wasNilDescription)
 		}
-		return NewResult(false, NewDescription("[%#v] was not nil", actual))
+		return NewResult(false, NewDescription("[%v] was not nil", actual))
 	}
 	_Nil = NewMatcher(NewDescription("matches nil"), match)
 }
@@ -128,7 +125,7 @@ func init() {
 		if _detectNil(actual) {
 			return NewResult(false, wasNilDescription)
 		}
-		return NewResult(true, NewDescription("[%#v] was not nil", actual))
+		return NewResult(true, NewDescription("[%v] was not nil", actual))
 	}
 	_NonNil = NewMatcher(NewDescription("matches non-nil"), match)
 }
@@ -139,17 +136,18 @@ func init() {
 func EqualTo(expected interface{}) *Matcher {
 	expectedType := reflect.Typeof(expected)
 	match := func (actual interface{}) *Result {
-		actualType := reflect.Typeof(expected)
+		actualType := reflect.Typeof(actual)
 		if actualType == expectedType {
 			if actual == expected {
-				return NewResult(true, 
-					NewDescription("was equal to [%v]", expected))
+				because := NewDescription("was equal to [%v]", expected)
+				return NewResult(true, because)
 			}
-			return NewResult(false,
-				NewDescription("[%v] was not equal to [%v]", actual, expected))
+			because := NewDescription("[%v] was not equal to [%v]", actual, expected)
+			return NewResult(false, because)
 		}
-		return NewResult(false,
-			NewDescription("[%v] could not be compared to [%v]", actual, expected))
+		because := NewDescription("%v[%v] could not be compared to %v[%v]",
+				actualType, actual, expectedType, expected)
+		return NewResult(false, because)
 	}
 	return NewMatcher(NewDescription("EqualTo[%v]", expected), match)
 }
@@ -163,10 +161,60 @@ func DeeplyEqualTo(expected interface{}) *Matcher {
 				NewDescription("was deeply equal to [%v]", expected))
 		}
 		return NewResult(false,
-			NewDescription("[%v] was not deeply equal to [%v]", expected))
+			NewDescription("[%v] was not deeply equal to [%v]", actual, expected))
 	}
 	return NewMatcher(NewDescription("DeeplyEqualTo[%v]", expected), match)
 }
+
+
+// Returns a short-circuiting Matcher that matches whenever all of
+// the given matchers match a given input value.  If any component
+// matcher fails to match an input value, later matchers are not
+// attempted.
+func AllOf(matchers...*Matcher) *Matcher {
+	asInterface := func (x interface{}) interface{} { return x }
+	description := NewDescription("AllOf%v", asInterface(matchers))
+	match := func (actual interface{}) *Result {
+		var results []*Result
+		for index, matcher := range matchers {
+			result := matcher.Match(actual)
+			results := append(results, result)
+			if !result.Matched() {
+				because := NewDescription(
+					"Did not match index #%v: [%v]", index, matcher)
+				return NewResult(false, because).WithCauses(results...)
+			}
+		}
+		because := NewDescription("Matched all of %v", asInterface(matchers))
+		return NewResult(true, because).WithCauses(results...)
+	}
+	return NewMatcher(description, match)
+}
+
+// Returns a short-circuiting Matcher that matches whenever all of
+// the given matchers match a given input value.  If any component
+// matcher fails to match an input value, later matchers are not
+// attempted.
+func AnyOf(matchers...*Matcher) *Matcher {
+	asInterface := func (x interface{}) interface{} { return x }
+	description := NewDescription("AnyOf%v", asInterface(matchers))
+	match := func (actual interface{}) *Result {
+		var results []*Result
+		for index, matcher := range matchers {
+			result := matcher.Match(actual)
+			results := append(results, result)
+			if result.Matched() {
+				because := NewDescription(
+					"Matched at index #%v: [%v]", index, matcher)
+				return NewResult(true, because).WithCauses(results...)
+			}
+		}
+		because := NewDescription("Did not match any of %v", asInterface(matchers))
+		return NewResult(false, because).WithCauses(results...)
+	}
+	return NewMatcher(description, match)
+}
+
 
 
 // First part of a builder for a short-circuiting both/and matcher:
@@ -184,18 +232,18 @@ type BothClause struct {
 func (self *BothClause) And(matcher2 *Matcher) *Matcher {
 	matcher1 := self.matcher
 	description := NewDescription("both [%v] and [%v]", matcher1, matcher2)
-	match := func(v interface{}) *Result {
-		result1 := matcher1.Match(v)
+	match := func(actual interface{}) *Result {
+		result1 := matcher1.Match(actual)
 		if !result1.Matched() {
-			because := NewDescription("first part of 'Both/And' did not match")
+			because := NewDescription("first part of 'Both/And' did not match [%v]", actual)
 			return NewResult(false, because).WithCauses(result1)
 		}
-		result2 := matcher2.Match(v)
+		result2 := matcher2.Match(actual)
 		if !result2.Matched() {
-			because := NewDescription("second part of 'Both/And' did not match")
+			because := NewDescription("second part of 'Both/And' did not match [%v]", actual)
 			return NewResult(false, because).WithCauses(result2)
 		}
-		because := NewDescription("both parts of 'Both/And' matched")
+		because := NewDescription("both parts of 'Both/And' matched [%v]", actual)
 		return NewResult(true, because).WithCauses(result1, result2)
 	}
 	return NewMatcher(description, match)
@@ -225,18 +273,18 @@ type EitherClause struct {
 func (self *EitherClause) Or(matcher2 *Matcher) *Matcher {
 	matcher1 := self.matcher
 	description := NewDescription("either [%v] or [%v]", matcher1, matcher2)
-	match := func(v interface{}) *Result {
-		result1 := matcher1.Match(v)
+	match := func(actual interface{}) *Result {
+		result1 := matcher1.Match(actual)
 		if result1.Matched() {
-			because := NewDescription("first part of 'Either/Or' matched")
+			because := NewDescription("first part of 'Either/Or' matched [%v]", actual)
 			return NewResult(true, because).WithCauses(result1)
 		}
-		result2 := matcher2.Match(v)
+		result2 := matcher2.Match(actual)
 		if result2.Matched() {
-			because := NewDescription("second part of 'Either/Or' matched")
+			because := NewDescription("second part of 'Either/Or' matched [%v]", actual)
 			return NewResult(true, because).WithCauses(result2)
 		}
-		because := NewDescription("neither part of 'Either/Or' matched")
+		because := NewDescription("neither part of 'Either/Or' matched [%v]", actual)
 		return NewResult(false, because).WithCauses(result1, result2)
 	}
 	return NewMatcher(description, match)
@@ -251,22 +299,22 @@ func (self *EitherClause) Or(matcher2 *Matcher) *Matcher {
 func (self *EitherClause) Xor(matcher2 *Matcher) *Matcher {
 	matcher1 := self.matcher
 	description := NewDescription("either [%v] xor [%v]", matcher1, matcher2)
-	match := func(v interface{}) *Result {
-		result1 := matcher1.Match(v)
-		result2 := matcher2.Match(v)
+	match := func(actual interface{}) *Result {
+		result1 := matcher1.Match(actual)
+		result2 := matcher2.Match(actual)
 		if result1.Matched() {
 			if result2.Matched() {
-				because := NewDescription("both parts of 'Either/Xor' matched")
+				because := NewDescription("both parts of 'Either/Xor' matched [%v]", actual)
 				return NewResult(false, because).WithCauses(result1, result2)
 			}
-			because := NewDescription("only the first part of 'Either/Xor' matched")
+			because := NewDescription("only the first part of 'Either/Xor' matched [%v]", actual)
 			return NewResult(true, because).WithCauses(result1, result2)
 		}
 		if result2.Matched() {
-			because := NewDescription("only the second part of 'Either/Xor' matched")
+			because := NewDescription("only the second part of 'Either/Xor' matched [%v]", actual)
 			return NewResult(true, because).WithCauses(result1, result2)
 		}
-		because := NewDescription("neither part of 'Either/Xor' matched")
+		because := NewDescription("neither part of 'Either/Xor' matched [%v]", actual)
 		return NewResult(false, because).WithCauses(result1, result2)
 	}
 	return NewMatcher(description, match)
@@ -291,18 +339,18 @@ type NeitherClause struct {
 func (self *NeitherClause) Nor(matcher2 *Matcher) *Matcher {
 	matcher1 := self.matcher
 	description := NewDescription("neither [%v] nor [%v]", matcher1, matcher2)
-	match := func(v interface{}) *Result {
-		result1 := matcher1.Match(v)
+	match := func(actual interface{}) *Result {
+		result1 := matcher1.Match(actual)
 		if result1.Matched() {
-			because := NewDescription("first part of 'Nor' matched")
+			because := NewDescription("first part of 'Nor' matched [%v]", actual)
 			return NewResult(false, because).WithCauses(result1)
 		}
-		result2 := matcher2.Match(v)
+		result2 := matcher2.Match(actual)
 		if result2.Matched() {
-			because := NewDescription("second part of 'Nor' matched")
+			because := NewDescription("second part of 'Nor' matched [%v]", actual)
 			return NewResult(false, because).WithCauses(result2)
 		}
-		because := NewDescription("neither part of 'Nor' matched")
+		because := NewDescription("neither part of 'Nor' matched [%v]", actual)
 		return NewResult(true, because).WithCauses(result1, result2)
 	}
 	return NewMatcher(description, match)
@@ -339,18 +387,18 @@ type IfClause struct {
 func (self *IfClause) Then(consequent *Matcher) *Matcher {
 	antecedent := self.antecedent
 	description := NewDescription("if [%v] then [%v]", antecedent, consequent)
-	match := func(v interface{}) *Result {
-		result1 := antecedent.Match(v)
+	match := func(actual interface{}) *Result {
+		result1 := antecedent.Match(actual)
 		if !result1.Matched() {
-			because := NewDescription("'If/Then' matched because antecedent failed")
+			because := NewDescription("'If/Then' matched because antecedent failed on [%v]", actual)
 			return NewResult(true, because).WithCauses(result1)
 		}
-		result2 := consequent.Match(v)
+		result2 := consequent.Match(actual)
 		if result2.Matched() {
-			because := NewDescription("'If/Then' matched because consequent matched")
+			because := NewDescription("'If/Then' matched because consequent matched on [%v]", actual)
 			return NewResult(true, because).WithCauses(result2)
 		}
-		because := NewDescription("'If/Then' failed")
+		because := NewDescription("'If/Then' failed on [%v]", actual)
 		return NewResult(false, because).WithCauses(result1, result2)
 	}
 	return NewMatcher(description, match)
@@ -381,22 +429,22 @@ type IfAndOnlyIfClause struct {
 func (self *IfAndOnlyIfClause) Then(consequent *Matcher) *Matcher {
 	antecedent := self.antecedent
 	description := NewDescription("if and only if [%v] then [%v]", antecedent, consequent)
-	match := func(v interface{}) *Result {
-		result1 := antecedent.Match(v)
-		result2 := consequent.Match(v)
+	match := func(actual interface{}) *Result {
+		result1 := antecedent.Match(actual)
+		result2 := consequent.Match(actual)
 		if result1.Matched() {
 			if result2.Matched() {
-				because := NewDescription("Matched because both parts of 'IfAndOnlyIf/Then' matched")
+				because := NewDescription("Matched because both parts of 'Iff/Then' matched on [%v]", actual)
 				return NewResult(true, because).WithCauses(result1, result2)
 			}
-			because := NewDescription("Failed because only the first part of 'IfAndOnlyIf/Then' matched")
+			because := NewDescription("Failed because only the first part of 'Iff/Then' matched on [%v]", actual)
 			return NewResult(false, because).WithCauses(result1, result2)
 		}
 		if result2.Matched() {
-			because := NewDescription("Failed because only the second part of 'IfAndOnlyIf/Then' matched")
+			because := NewDescription("Failed because only the second part of 'IFf/Then' matched on [%v]", actual)
 			return NewResult(false, because).WithCauses(result1, result2)
 		}
-		because := NewDescription("Matched because neither part of 'IfAndOnlyIf/Then' matched")
+		because := NewDescription("Matched because neither part of 'Iff/Then' matched on [%v]", actual)
 		return NewResult(true, because).WithCauses(result1, result2)
 	}
 	return NewMatcher(description, match)
