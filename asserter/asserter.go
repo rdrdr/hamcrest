@@ -117,6 +117,12 @@ func UsingStderr() Asserter {
 	return UsingWriter(os.Stderr)
 }
 
+// Convenience function to return an Asserter for which every
+// operation is a no-op.
+func ThatDoesNothing() Asserter {
+	return &_NullAsserter{}
+}
+
 // --------------------------------------------------------------------
 // Implementation
 // --------------------------------------------------------------------
@@ -141,6 +147,28 @@ func (self *_LoggerUsingWriter) FailNow() {
 	self.failNow()
 }
 
+
+type _NullAsserter struct {}
+
+func (self *_NullAsserter) Fail() {}
+func (self *_NullAsserter) FailNow() {}
+func (self *_NullAsserter) Failed() bool { return false }
+func (self *_NullAsserter) LogWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result { return nil }
+func (self *_NullAsserter) LogUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result { return nil }
+func (self *_NullAsserter) FailWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result { return nil }
+func (self *_NullAsserter) FailUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result { return nil }
+func (self *_NullAsserter) FailNowWhen(value interface{}, matcher *hamcrest.Matcher) { }
+func (self *_NullAsserter) FailNowUnless(value interface{}, matcher *hamcrest.Matcher) { }
+func (self *_NullAsserter) CheckThat(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result { return nil }
+func (self *_NullAsserter) CheckTrue(value bool, comments ...interface{}) *hamcrest.Result { return nil }
+func (self *_NullAsserter) CheckFalse(value bool, comments ...interface{}) *hamcrest.Result { return nil }
+func (self *_NullAsserter) CheckNil(value interface{}, comments ...interface{}) *hamcrest.Result { return nil }
+func (self *_NullAsserter) CheckNonNil(value interface{}, comments ...interface{}) *hamcrest.Result { return nil }
+func (self *_NullAsserter) AssertThat(value interface{}, matcher *hamcrest.Matcher) { }
+func (self *_NullAsserter) AssertTrue(value bool, comments ...interface{}) { }
+func (self *_NullAsserter) AssertFalse(value bool, comments ...interface{}) { }
+func (self *_NullAsserter) AssertNil(value interface{}, comments ...interface{}) { }
+func (self *_NullAsserter) AssertNonNil(value interface{}, comments ...interface{}) { }
 
 type _Asserter struct {
 	logger Logger

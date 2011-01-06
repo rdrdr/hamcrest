@@ -234,3 +234,20 @@ func Test_AssertThat(t *testing.T) {
 	}
 }
 
+func Test_NullAsserter(t *testing.T) {
+	asserter := ThatDoesNothing()
+	snooped := false
+	snoopMatcher := hamcrest.NewMatcher(hamcrest.NewDescription("snoop"),
+		func(v interface{}) *hamcrest.Result { 
+			snooped = true
+			return hamcrest.NewResult(true, hamcrest.NewDescription("snooped!"))
+		})
+	asserter.AssertThat("x", snoopMatcher)
+	if snooped {
+		t.Fatal("Calling AssertThat() should not invoke matcher!")
+	}
+	asserter.AssertTrue(false, "Should ignore attempts to AssertTrue")
+	asserter.AssertFalse(true, "Should ignore attempts to AssertFalse")
+	asserter.AssertNil("ha!", "Should ignore attempts to AssertNil")
+	asserter.AssertNonNil(nil, "Should ignore attempts to AssertNonNil")
+}
