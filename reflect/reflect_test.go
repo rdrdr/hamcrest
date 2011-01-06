@@ -182,3 +182,39 @@ func Test_SliceOfType(t *testing.T) {
 	
 }
 
+func Test_MapTypeWithKeyType(t *testing.T) {
+	we := asserter.Using(t)
+	stringIntMap := map[string]int{"one": 1, "two": 2}
+	intStringMap := map[int]string{1: "one", 2: "two"}
+	
+	we.CheckThat(intStringMap, Is(MapWithKeyType(Anything())))
+	we.CheckThat(intStringMap, Is(MapWithKeyType(IntType())))
+	we.CheckThat(intStringMap, Is(Not(MapWithKeyType(StringType()))))
+	we.CheckThat(stringIntMap, Is(Not(MapWithKeyType(IntType()))))
+	we.CheckThat(stringIntMap, Is(MapWithKeyType(StringType())))
+
+	we.CheckThat(intStringMap, ToType(Is(MapTypeWithKeyType(Anything()))))
+	we.CheckThat(intStringMap, ToType(Is(MapTypeWithKeyType(IntType()))))
+	we.CheckThat(intStringMap, ToType(Is(Not(MapTypeWithKeyType(StringType())))))
+	we.CheckThat(stringIntMap, ToType(Is(Not(MapTypeWithKeyType(IntType())))))
+	we.CheckThat(stringIntMap, ToType(Is(MapTypeWithKeyType(StringType()))))
+}
+
+func Test_MapTypeWithElementType(t *testing.T) {
+	we := asserter.Using(t)
+	stringIntMap := map[string]int{"one": 1, "two": 2}
+	intStringMap := map[int]string{1: "one", 2: "two"}
+	
+	we.CheckThat(stringIntMap, Is(MapWithElementType(Anything())))
+	we.CheckThat(stringIntMap, Is(MapWithElementType(IntType())))
+	we.CheckThat(stringIntMap, Is(Not(MapWithElementType(StringType()))))
+	we.CheckThat(intStringMap, Is(Not(MapWithElementType(IntType()))))
+	we.CheckThat(intStringMap, Is(MapWithElementType(StringType())))
+
+	we.CheckThat(stringIntMap, ToType(Is(MapTypeWithElementType(Anything()))))
+	we.CheckThat(stringIntMap, ToType(Is(MapTypeWithElementType(IntType()))))
+	we.CheckThat(stringIntMap, ToType(Is(Not(MapTypeWithElementType(StringType())))))
+	we.CheckThat(intStringMap, ToType(Is(Not(MapTypeWithElementType(IntType())))))
+	we.CheckThat(intStringMap, ToType(Is(MapTypeWithElementType(StringType()))))
+}
+

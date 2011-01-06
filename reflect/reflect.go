@@ -89,7 +89,7 @@ func StringType() *hamcrest.Matcher { return stringTypeMatcher }
 // extracts the type of element and matches it against the given matcher.
 //
 // If the given input is not an *reflect.ArrayType, this fails to match.
-// Note:  this matches array *types*, not arrays.
+// Note:  this matches array *types*, not arrays. (See ArrayOf.)
 func ArrayTypeOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 	match := func(actual interface{}) *hamcrest.Result {
 		if arrayType, ok := actual.(*reflect.ArrayType); ok {
@@ -111,7 +111,7 @@ func ArrayTypeOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 // its type and matches it against the given matcher.
 //
 // If the given input is not an array, this fails to match.
-// Note: this matches arrays, not array types.
+// Note: this matches *arrays*, not array *types*. (See ArrayTypeOf.)
 func ArrayOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 	match := func(actual interface{}) *hamcrest.Result {
 		actualType := reflect.Typeof(actual)
@@ -134,7 +134,7 @@ func ArrayOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 // extracts the type of element and matches it against the given matcher.
 //
 // If the given input is not an *reflect.SliceType, this fails to match.
-// Note:  this matches slice *types*, not slices.
+// Note:  this matches slice *types*, not slices.  (See SliceOf.)
 func SliceTypeOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 	match := func(actual interface{}) *hamcrest.Result {
 		if sliceType, ok := actual.(*reflect.SliceType); ok {
@@ -156,7 +156,7 @@ func SliceTypeOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 // its type and matches it against the given matcher.
 //
 // If the given input is not an array, this fails to match.
-// Note: this matches arrays, not array types.
+// Note: this matches *slices*, not slice *types*.  (See SliceTypeOf.)
 func SliceOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 	match := func(actual interface{}) *hamcrest.Result {
 		actualType := reflect.Typeof(actual)
@@ -174,5 +174,100 @@ func SliceOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 	description := hamcrest.NewDescription("SliceOf(%v)", elementTypeMatcher)
 	return hamcrest.NewMatcher(description, match)
 }
+
+// Returns a new matcher that, on any input that is a *reflect.MapType,
+// extracts the type of key element and matches it against the given matcher.
+//
+// If the given input is not an *reflect.MapType, this fails to match.
+// Note:  this matches map *types*, not maps.  (See MapWithKeyType.)
+func MapTypeWithKeyType(keyTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
+	match := func(actual interface{}) *hamcrest.Result {
+		if mapType, ok := actual.(*reflect.MapType); ok {
+			keyType := mapType.Key()
+			description := hamcrest.NewDescription(
+				"was MapType with keys of type %v", keyType)
+			result := keyTypeMatcher.Match(keyType)
+			return hamcrest.NewResult(
+				result.Matched(), description).WithCauses(result)
+		}
+		why := hamcrest.NewDescription("was of type %T, not a MapType", actual)
+		return hamcrest.NewResult(false, why)
+	}
+	description := hamcrest.NewDescription("MapTypeWithKeyType(%v)", keyTypeMatcher)
+	return hamcrest.NewMatcher(description, match)
+}
+
+// Returns a new matcher that, on any input that is a map, extracts the
+// type of key element and matches it against the given matcher.
+//
+// If the given input is not an map, this fails to match.
+// Note:  this matches maps, not map *types*.  (See MapTypeWithKeyType.)
+func MapWithKeyType(keyTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
+	match := func(actual interface{}) *hamcrest.Result {
+		actualType := reflect.Typeof(actual)
+		if mapType, ok := actualType.(*reflect.MapType); ok {
+			keyType := mapType.Key()
+			description := hamcrest.NewDescription(
+				"was map with keys of type %v", keyType)
+			result := keyTypeMatcher.Match(keyType)
+			return hamcrest.NewResult(
+				result.Matched(), description).WithCauses(result)
+		}
+		why := hamcrest.NewDescription("was of type %T, not a map", actual)
+		return hamcrest.NewResult(false, why)
+	}
+	description := hamcrest.NewDescription("MapWithKeyType(%v)", keyTypeMatcher)
+	return hamcrest.NewMatcher(description, match)
+}
+
+// Returns a new matcher that, on any input that is a *reflect.MapType,
+// extracts the type of element and matches it against the given matcher.
+//
+// If the given input is not an *reflect.MapType, this fails to match.
+// Note:  this matches map *types*, not maps.  (See MapWithElementType.)
+func MapTypeWithElementType(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
+	match := func(actual interface{}) *hamcrest.Result {
+		if mapType, ok := actual.(*reflect.MapType); ok {
+			elementType := mapType.Elem()
+			description := hamcrest.NewDescription(
+				"was MapType with elements of type %v", elementType)
+			result := elementTypeMatcher.Match(elementType)
+			return hamcrest.NewResult(
+				result.Matched(), description).WithCauses(result)
+		}
+		why := hamcrest.NewDescription("was of type %T, not a MapType", actual)
+		return hamcrest.NewResult(false, why)
+	}
+	description := hamcrest.NewDescription(
+		"MapTypeWithElementType(%v)", elementTypeMatcher)
+	return hamcrest.NewMatcher(description, match)
+}
+
+// Returns a new matcher that, on any input that is a *reflect.MapType,
+// extracts the type of key element and matches it against the given matcher.
+//
+// If the given input is not an *reflect.MapType, this fails to match.
+// Note:  this matches map *types*, not maps.  (See MapTypeWithElementType.)
+func MapWithElementType(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
+	match := func(actual interface{}) *hamcrest.Result {
+		actualType := reflect.Typeof(actual)
+		if mapType, ok := actualType.(*reflect.MapType); ok {
+			elementType := mapType.Elem()
+			description := hamcrest.NewDescription(
+				"was map with elements of type %v", elementType)
+			result := elementTypeMatcher.Match(elementType)
+			return hamcrest.NewResult(
+				result.Matched(), description).WithCauses(result)
+		}
+		why := hamcrest.NewDescription("was of type %T, not a map", actual)
+		return hamcrest.NewResult(false, why)
+	}
+	description := hamcrest.NewDescription(
+		"MapWithElementType(%v)", elementTypeMatcher)
+	return hamcrest.NewMatcher(description, match)
+}
+
+
+
 
 
