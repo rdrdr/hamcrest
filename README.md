@@ -39,31 +39,58 @@ Expected future packages:
 How to use hamcrest for testing:
 ================================
 
-To use Hamcrest matchers, one creates an `Asserter`
-and uses it to `Check` or `Assert` values.
+To use Hamcrest matchers, create an `Asserter` and use it to
+`Check` or `Assert` that values meet the criteria of those
+matchers:
 
 	func TestPoint(t *testing.T) {
 		p := Point(3, 4)
 		we := asserter.Using(t)
-		we.AssertThat(p.X, EqualTo(3).Comment("x coordinate"))
-		we.AssertThat(p.Y, EqualTo(4).Comment("y coordinate"))
+		we.AssertThat(p.X, EqualTo(3).Comment("x coord"))
+		we.AssertThat(p.Y, EqualTo(4).Comment("y coord"))
 		we.CheckThat(p, ToString(EqualTo("[3, 4]")))
-		we.CheckThat(p, DeeplyEqualTo(Point(3, 4)))
+		we.CheckThat(p.Magnitude(), EqualTo(5).Comment("magnitude"))
 	}
 
-(`Assert` methods fail immediately, as `testing.T.FailNow`, while `Check`
-methods defer failure, as `testing.T.Fail`.)
+(`Assert` methods fail immediately, as `testing.T.FailNow()` does,
+while `Check` methods defer failure, as `testing.T.Fail()` does.)
 
 The `AssertThat` and `CheckThat` functions are designed to create
 conditional checks that read fluently as self-commenting code, and
 are self-describing when failures occur.  For example, the above
 test might fail with this message:
 	
-	FAILURE: input [4, 3] on EqualTo([12, 34])
-		Because: ([34, 12]) was not equal to ([12, 34])
+	FAILURE on input &Point{X:3, Y:4}
+		Did not match ToString(EqualTo([3, 4]))
+		Because: String() was [4, 3]
+			Did not match EqualTo[[3, 4]]
+			Because: [[4, 3]] was not equal to [[3, 4]]
+
+Or:
+
+	FAILURE on input 5
+		Did not match EqualTo(5)
+		Because: uint 5 could not be compared to int 5
+		Comment: magnitude
+
+Note that the text descriptions are generated automatically by the
+matchers, so that the user 
 
 Effort invested in good self-describing matchers can be leveraged
 across many tests.
+
+Suggested use of hamcrest at runtime:
+=====================================
+
+Create an asserter using stderr and panic to ensure that
+globals are properly initialized:
+
+	func init() {
+		we := asserter.UsingStderr()
+		for _, host := range hosts {
+			we.AssertThat(host, RespondsToPings())
+		}
+	}
 
 
 A tour of common matchers
@@ -72,8 +99,8 @@ A tour of common matchers
 Hamcrest comes with a library of useful matchers. Here are some of the most
 common ones.
 
-  * `Anything` - always matches
-  * `EqualTo(obj)` - matches any object `x` where `x==obj` would be true
+  * `Anything` - matches any input
+  * `EqualTo(obj)` - matches any input `x` where `x==obj` would be true
   * `DeeplyEqualTo(obj)` - matches any object `x` where `reflect.DeepEquals(x, obj)` is true
   * `True` - only matches bool `true`
   * `False` - only matches bool `false`

@@ -10,7 +10,7 @@ import (
 // Applies the given matcher to the result of writing the input object's
 // to a string by using fmt.Sprintf("%v", object).
 func ToString(matcher *hamcrest.Matcher) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("ToString(%#v)", matcher)
+	description := hamcrest.NewDescription("ToString(%v)", matcher)
 	match := func(actual interface{}) *hamcrest.Result {
 		var s string
 		var why *hamcrest.Description
@@ -22,10 +22,7 @@ func ToString(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 			why = hamcrest.NewDescription("Not a fmt.Stringer, but prints as %v", s)
 		}
 		result := matcher.Match(s)
-		if result.Matched() {
-			return hamcrest.NewResult(true, why).WithCauses(result)
-		}
-		return hamcrest.NewResult(false, why).WithCauses(result)
+		return hamcrest.NewResult(result.Matched(), why).WithCauses(result)
 	}
 	return hamcrest.NewMatcher(description, match)
 }
