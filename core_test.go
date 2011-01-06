@@ -57,11 +57,13 @@ func logSamples(t *testing.T, matcher *Matcher) {
 	t.Logf("\ton uint: %v\n", matcher.match(uint(42)))
 	t.Logf("\ton float: %v\n", matcher.match(42.0))
 	t.Logf("\ton string: %v\n", matcher.match("foobar"))
+	t.Logf("\ton struct: %v\n", matcher.match(struct {Field int} {Field:42}))
+	t.Logf("\ton type: %v\n", matcher.match(reflect.Typeof(uninitialized)))
 	
 	t.Logf("\ton channel: %v\n", matcher.match(make(chan int, 1)))
 	t.Logf("\ton function: %v\n", matcher.match(func() int { return 1 }))
+	t.Logf("\ton function: %v\n", matcher.match(interface{}(nil)))
 	t.Logf("\ton map: %v\n", matcher.match(map[int]string{1:"one", 2:"two"}))
-	t.Logf("\ton struct: %v\n", matcher.match(struct {Field int} {Field:42}))
 	t.Logf("\ton pointer: %v\n", matcher.match(&struct {Field int} {Field:42}))
 	t.Logf("\ton slice: %v\n", matcher.match([]int{1}))
 	
@@ -104,8 +106,35 @@ func Test_False(t *testing.T) {
 	logSamples(t, matcher)
 }
 
+func Test_Matched(t *testing.T) {
+	matcher := Matched()
+	passResult := NewResult(true, NewDescription("pass"))
+	failResult := NewResult(false, NewDescription("fail"))
+	
+	checkResultIsMatching(t, matcher.Match(passResult), "matching")
+	checkResultIsNonMatching(t, matcher.Match(failResult), "non-matching")
+	checkResultIsNonMatching(t, matcher.Match(nil), "nil")
+	checkResultIsNonMatching(t, matcher.Match("foo"), "not a Result")
+	checkMatcherIsNonMatchingOnNils(t, matcher)
+	logSamples(t, matcher)
+}
+
+func Test_DidNotMatch(t *testing.T) {
+	matcher := DidNotMatch()
+	passResult := NewResult(true, NewDescription("pass"))
+	failResult := NewResult(false, NewDescription("fail"))
+	
+	checkResultIsNonMatching(t, matcher.Match(passResult), "matching")
+	checkResultIsMatching(t, matcher.Match(failResult), "non-matching")
+	checkResultIsNonMatching(t, matcher.Match(nil), "nil")
+	checkResultIsNonMatching(t, matcher.Match("foo"), "not a Result")
+	checkMatcherIsNonMatchingOnNils(t, matcher)
+	logSamples(t, matcher)
+}
+
 func Test_Not(t *testing.T) {
 	matcher := Not(False())
+	
 	checkResultIsMatching(t, matcher.match(true), "bool true")
 	checkResultIsNonMatching(t, matcher.match(false), "bool false")
 	checkResultIsMatching(t, matcher.match("foo"), "string")

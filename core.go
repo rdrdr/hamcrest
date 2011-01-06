@@ -59,6 +59,39 @@ func init() {
 }
 
 
+// Returns a Matcher that matches the boolean value true.
+func Matched() *Matcher {
+	return _Matched
+}
+var _Matched *Matcher // singleton
+func init() {
+	description := NewDescription("was a result")
+	match := func (actual interface{}) *Result {
+		if result, ok := actual.(*Result); ok {
+			return NewResult(result.Matched(), description).WithCauses(result)
+		}
+		return NewResult(false, NewDescription("[%v] was not a result", actual))
+	}
+	_Matched = NewMatcher(NewDescription("Matched"), match)
+}
+
+// Returns a Matcher that matches the boolean value false.
+func DidNotMatch() *Matcher {
+	return _DidNotMatch
+}
+var _DidNotMatch *Matcher // singleton
+func init() {
+	description := NewDescription("was a result")
+	match := func (actual interface{}) *Result {
+		if result, ok := actual.(*Result); ok {
+			return NewResult(!result.Matched(), description).WithCauses(result)
+		}
+		return NewResult(false, NewDescription("[%v] was not a result", actual))
+	}
+	_DidNotMatch = NewMatcher(NewDescription("DidNotMatch"), match)
+}
+
+
 // Returns a Matcher that decorates another matcher and only matches
 // when the underlying matcher does not match (and vice versa).
 func Not(matcher *Matcher) *Matcher {
@@ -171,8 +204,11 @@ func DeeplyEqualTo(expected interface{}) *Matcher {
 // matcher fails to match an input value, later matchers are not
 // attempted.
 func AllOf(matchers...*Matcher) *Matcher {
-	asInterface := func (x interface{}) interface{} { return x }
-	description := NewDescription("AllOf%v", asInterface(matchers))
+	descriptions := make([]*Description, len(matchers), len(matchers))
+	for index, matcher := range matchers {
+		descriptions[index] = NewDescription("[%v: %v]", index+1, matcher)
+	}
+	description := NewDescription("AllOf%v", descriptions)
 	match := func (actual interface{}) *Result {
 		var results []*Result
 		for index, matcher := range matchers {
@@ -196,8 +232,11 @@ func AllOf(matchers...*Matcher) *Matcher {
 // matcher fails to match an input value, later matchers are not
 // attempted.
 func AnyOf(matchers...*Matcher) *Matcher {
-	asInterface := func (x interface{}) interface{} { return x }
-	description := NewDescription("AnyOf%v", asInterface(matchers))
+	descriptions := make([]*Description, len(matchers), len(matchers))
+	for index, matcher := range matchers {
+		descriptions[index] = NewDescription("[%v: %v]", index+1, matcher)
+	}
+	description := NewDescription("AnyOf%v", descriptions)
 	match := func (actual interface{}) *Result {
 		var results []*Result
 		for index, matcher := range matchers {
@@ -321,9 +360,12 @@ func (self *EitherClause) Xor(matcher2 *Matcher) *Matcher {
 }
 
 // First part of a builder for a short-circuiting neither/nor matcher:
-//     matcher := Neither(matcher1).Or(matcher2)
+//     matcher := Neither(matcher1).Nor(matcher2)
 // such that the second matcher is only tested if the first matcher
 // fails to match, and the resulting matcher matches if either matches.
+// Note that the expression is logically equivalent to:
+//     Both(Not(matcher1)).And(Not(matcher2))
+// But may be more readable in practice.
 func Neither(matcher *Matcher) *NeitherClause {
 	return &NeitherClause{matcher:matcher}
 }
@@ -336,6 +378,9 @@ type NeitherClause struct {
 // Creates a matcher that passes when neither this matcher nor the
 // other matcher pass.  This operation is short-circuiting, so that
 // if the first matcher matches, the second is not attempted.
+//  Note that this is logically equivalent to:
+//     Both(Not(matcher1)).And(Not(matcher2))
+// But may be more readable in practice.
 func (self *NeitherClause) Nor(matcher2 *Matcher) *Matcher {
 	matcher1 := self.matcher
 	description := NewDescription("neither [%v] nor [%v]", matcher1, matcher2)
@@ -364,7 +409,7 @@ func (self *NeitherClause) Nor(matcher2 *Matcher) *Matcher {
 // matches, and the resulting matcher only fails to match when the
 // consequent fails to match. Note that this is logically
 // equivalent to:
-//     Not(AntecedentMatcher).Or(ConsequentMatcher)
+//     Either(Not(AntecedentMatcher)).Or(ConsequentMatcher)
 // But may be more readable in practice.
 func If(antecedent *Matcher) *IfClause {
 	return &IfClause{antecedent:antecedent}
@@ -449,5 +494,4 @@ func (self *IfAndOnlyIfClause) Then(consequent *Matcher) *Matcher {
 	}
 	return NewMatcher(description, match)
 }
-
 
