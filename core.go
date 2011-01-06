@@ -64,8 +64,7 @@ func init() {
 func Not(matcher *Matcher) *Matcher {
 	match := func (actual interface{}) *Result {
 		result := matcher.Match(actual)
-		description := NewDescription("Not[%v]", result.description)
-		return NewResult(!result.matched, description).WithCauses(result)
+		return NewResult(!result.matched, result.description).WithCauses(result)
 	}
 	return NewMatcher(NewDescription("Not[%v]", matcher), match)
 }
@@ -181,11 +180,12 @@ func AllOf(matchers...*Matcher) *Matcher {
 			results := append(results, result)
 			if !result.Matched() {
 				because := NewDescription(
-					"Did not match index #%v: [%v]", index, matcher)
+					"Failed matcher %v of %v: [%v]",
+						index+1, len(matchers), matcher)
 				return NewResult(false, because).WithCauses(results...)
 			}
 		}
-		because := NewDescription("Matched all of %v", asInterface(matchers))
+		because := NewDescription("Matched all %v matchers", len(matchers))
 		return NewResult(true, because).WithCauses(results...)
 	}
 	return NewMatcher(description, match)
@@ -205,11 +205,11 @@ func AnyOf(matchers...*Matcher) *Matcher {
 			results := append(results, result)
 			if result.Matched() {
 				because := NewDescription(
-					"Matched at index #%v: [%v]", index, matcher)
+					"Matched on matcher %v of %v: [%v]", index+1, len(matchers), matcher)
 				return NewResult(true, because).WithCauses(results...)
 			}
 		}
-		because := NewDescription("Did not match any of %v", asInterface(matchers))
+		because := NewDescription("Matched none of the %v matchers", len(matchers))
 		return NewResult(false, because).WithCauses(results...)
 	}
 	return NewMatcher(description, match)

@@ -131,7 +131,7 @@ func (self *Matcher) Comments() []interface{} {
 
 // Returns a *new* Matcher similar to this one, but with the
 // given additional comments.
-func (self *Matcher) AddComments(comments... interface{}) *Matcher {
+func (self *Matcher) Comment(comments... interface{}) *Matcher {
 	all := make([]interface{}, 0, len(self.comments) + len(comments))
 	copy(all, self.comments)
 	all = append(all, comments...)

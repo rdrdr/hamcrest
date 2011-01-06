@@ -85,7 +85,7 @@ var MATCHER = hamcrest.NewMatcher(
 		}
 		because := hamcrest.NewDescription(NONMATCHING_RESULT)
 		return hamcrest.NewResult(false, because)
-	}).AddComments(MATCHER_COMMENT1, MATCHER_COMMENT2)
+	}).Comment(MATCHER_COMMENT1, MATCHER_COMMENT2)
 
 func Test_LogWhen_onNonMatchingResult(t *testing.T) {
 	buffer := newBuffer()

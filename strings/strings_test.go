@@ -48,24 +48,31 @@ func Test_ToString_onTypesThatImplementFormatter(t *testing.T) {
 
 func Test_Contains(t *testing.T) {
 	we := asserter.Using(t)
-	we.CheckThat("abcde", Contains("abc").AddComments("prefix"))
-	we.CheckThat("abcde", Contains("bcd").AddComments("middle"))
-	we.CheckThat("abcde", Contains("cde").AddComments("suffix"))
-	we.CheckThat("abcde", Not(Contains("ace")).AddComments("not a match"))
-	we.CheckThat(123, Not(Contains("123")).AddComments("not a string"))
+	we.CheckThat("abcde", Contains("abc").Comment("prefix"))
+	we.CheckThat("abcde", Contains("bcd").Comment("middle"))
+	we.CheckThat("abcde", Contains("cde").Comment("suffix"))
+	we.CheckThat("abcde", Not(Contains("ace")).Comment("not a match"))
+	we.CheckThat(123, Not(Contains("123")).Comment("not a string"))
 }
 
 func Test_HasPrefix(t *testing.T) {
+	alphabet := "abcdefghijklmnopqrstuvwxyz"
 	we := asserter.Using(t)
-	we.CheckThat("abcde", HasPrefix("abc").AddComments("actual prefix"))
-	we.CheckThat("abcde", Not(HasPrefix("cde").AddComments("not a prefix")))
-	we.CheckThat(123, Not(HasPrefix("123")).AddComments("not a string"))
-	
-	failResult := HasPrefix("123").Match("abcdef").String()
+	we.CheckThat(alphabet, HasPrefix("abc").Comment("actual prefix"))
+	we.CheckThat(alphabet, Not(HasPrefix("cde").Comment("not a prefix")))
+	we.CheckThat(123, Not(HasPrefix("123")).
+		Comment("not a string"))
+
+	failResult := HasPrefix("123").Match(alphabet).String()
 	we.CheckThat(failResult, Contains("123"))
+	we.CheckThat(failResult, Contains("abcdef"))
+	we.CheckThat(failResult, Not(Contains("xyz")).
+		Comment("Should truncate input on failResult"))
 	
-	passResult := HasPrefix("abc").Match("abcdef").String()
-	we.CheckThat(passResult, Contains("abc"))
+	passResult := HasPrefix("abc").Match(alphabet).String()
+	we.CheckThat(passResult, Contains("abcdef"))
+	we.CheckThat(passResult, Not(Contains("xyz")).
+		Comment("Should truncate input on passResult"))
 }
 
 func Test_HasSuffix(t *testing.T) {
@@ -83,8 +90,8 @@ func Test_HasSuffix(t *testing.T) {
 
 func Test_HasPattern(t *testing.T) {
 	we := asserter.Using(t)
-	we.CheckThat("abcd", HasPattern("a+b+").AddComments("at beginning of string"))
-	we.CheckThat("abcd", HasPattern("b+c+").AddComments("in middle of string"))
-	we.CheckThat("abcd", HasPattern("c+d+").AddComments("at end of string"))
+	we.CheckThat("abcd", HasPattern("a+b+").Comment("at beginning of string"))
+	we.CheckThat("abcd", HasPattern("b+c+").Comment("in middle of string"))
+	we.CheckThat("abcd", HasPattern("c+d+").Comment("at end of string"))
 	we.CheckThat("abcd", Not(HasPattern("[xy]+")))
 }

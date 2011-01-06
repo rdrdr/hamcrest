@@ -12,6 +12,9 @@ var _False = hamcrest.False
 var _Nil = hamcrest.Nil
 var _NonNil = hamcrest.NonNil
 
+
+// Used by an Asserter to write log/error messages.
+//
 // A bit hacky...this was reverse-engineered to conform to testing.T.
 type Logger interface {
 	Logf(format string, args ...interface{})
@@ -20,28 +23,72 @@ type Logger interface {
 	FailNow()
 }
 
+// Applies matchers to values, writing descriptions of the
+// results to a Logger.
 type Asserter interface {
+	// Returns true if Fail() has been called.
 	Failed() bool
+	
+	// Marks this asserter as having a failed assertion
+	// but continues execution.
 	Fail()
+	
+	// Marks this asserter as having a failed assertion
+	// and invokes the immediate failure action.
 	FailNow()
 	
+	// On a successful match, describes the result of applying
+	// the given matcher to the given value.
 	LogWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
+	
+	// On an unsuccessful match, describes the result of applying
+	// the given matcher to the given value.
 	LogUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
+	
+	// On a successful match, describes the result of applying
+	// the given matcher to the given value and invokes Fail().
 	FailWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
+	
+	// On an unsuccessful match, describes the result of applying
+	// the given matcher to the given value and invokes Fail().
 	FailUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
+	
+	// On a successful match, describes the result of applying
+	// the given matcher to the given value and invokes FailNow().
 	FailNowWhen(value interface{}, matcher *hamcrest.Matcher)
+	
+	// On an unsuccessful match, describes the result of applying
+	// the given matcher to the given value and invokes FailNow().
 	FailNowUnless(value interface{}, matcher *hamcrest.Matcher)
 	
+	// Equivalent to FailUnless.
 	CheckThat(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
+	
+	// Equivalent to FailUnless with the True matcher.
 	CheckTrue(value bool, messages ...interface{}) *hamcrest.Result
+	
+	// Equivalent to FailUnless with the False matcher.
 	CheckFalse(value bool, messages ...interface{}) *hamcrest.Result
+	
+	// Equivalent to FailUnless with the Nil matcher.
 	CheckNil(value interface{}, messages ...interface{}) *hamcrest.Result
+	
+	// Equivalent to FailUnless with the NonNil matcher.
 	CheckNonNil(value interface{}, messages ...interface{}) *hamcrest.Result
 	
+	// Equivalent to FailNowUnless.
 	AssertThat(value interface{}, matcher *hamcrest.Matcher)
+	
+	// Equivalent to FailNowUnless with the True matcher.
 	AssertTrue(value bool, messages ...interface{})
+	
+	// Equivalent to FailNowUnless with the False matcher.
 	AssertFalse(value bool, messages ...interface{})
+	
+	// Equivalent to FailNowUnless with the Nil matcher.
 	AssertNil(value interface{}, messages ...interface{})
+	
+	// Equivalent to FailNowUnless with the NonNil matcher.
 	AssertNonNil(value interface{}, messages ...interface{})
 }
 
@@ -127,11 +174,15 @@ func safeMatch(value interface{}, matcher *hamcrest.Matcher) (result *hamcrest.R
 func (self *_Asserter) _LogWithCauses(previousIndent string, result *hamcrest.Result) {
 	indent := previousIndent + "\t"
 	matcher := result.Matcher()
-	self.logger.Logf("%vMatcher: [%v]", indent, matcher)
-	for _, comment := range matcher.Comments() {
-		self.logger.Logf("%vComment: %v", indent, comment)
+	if result.Matched() {
+		self.logger.Logf("%vMatched %v\n", indent, matcher)
+	} else {
+		self.logger.Logf("%vDid not match %v\n", indent, matcher)
 	}
-	self.logger.Logf("%vBecause: [%v]", indent, result)
+	self.logger.Logf("%vBecause: %v\n", indent, result)
+	for _, comment := range matcher.Comments() {
+		self.logger.Logf("%vComment: %v\n", indent, comment)
+	}
 	for _, cause := range result.Causes() {
 		self._LogWithCauses(indent, cause)
 	}
@@ -140,7 +191,7 @@ func (self *_Asserter) _LogWithCauses(previousIndent string, result *hamcrest.Re
 func (self *_Asserter) LogWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result {
 	result := safeMatch(value, matcher)
 	if result.Matched() {
-		self.logger.Logf("MATCHED: [%v] on [%v]", matcher, value)
+		self.logger.Logf("MATCHED on input %#v\n", value)
 		self._LogWithCauses("", result)
 	}
 	return result
@@ -149,7 +200,7 @@ func (self *_Asserter) LogWhen(value interface{}, matcher *hamcrest.Matcher) *ha
 func (self *_Asserter) LogUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result {
 	result := safeMatch(value, matcher)
 	if !result.Matched() {
-		self.logger.Logf("FAILURE: [%v] on [%v]", matcher, value)
+		self.logger.Logf("FAILURE on input %#v\n", value)
 		self._LogWithCauses("", result)
 	}
 	return result
@@ -187,19 +238,19 @@ func (self *_Asserter) CheckThat(value interface{}, matcher *hamcrest.Matcher) *
 }
 
 func (self *_Asserter) CheckTrue(value bool, comments ...interface{}) *hamcrest.Result {
-	return self.CheckThat(value, hamcrest.True().AddComments(comments...))
+	return self.CheckThat(value, hamcrest.True().Comment(comments...))
 }
 
 func (self *_Asserter) CheckFalse(value bool, comments ...interface{}) *hamcrest.Result {
-	return self.CheckThat(value, hamcrest.False().AddComments(comments...))
+	return self.CheckThat(value, hamcrest.False().Comment(comments...))
 }
 
 func (self *_Asserter) CheckNil(value interface{}, comments ...interface{}) *hamcrest.Result {
-	return self.CheckThat(value, hamcrest.Nil().AddComments(comments...))
+	return self.CheckThat(value, hamcrest.Nil().Comment(comments...))
 }
 
 func (self *_Asserter) CheckNonNil(value interface{}, comments ...interface{}) *hamcrest.Result {
-	return self.CheckThat(value, hamcrest.NonNil().AddComments(comments...))
+	return self.CheckThat(value, hamcrest.NonNil().Comment(comments...))
 }
 
 func (self *_Asserter) AssertThat(value interface{}, matcher *hamcrest.Matcher) {
@@ -207,17 +258,17 @@ func (self *_Asserter) AssertThat(value interface{}, matcher *hamcrest.Matcher) 
 }
 
 func (self *_Asserter) AssertTrue(value bool, comments ...interface{}) {
-	self.AssertThat(value, hamcrest.True().AddComments(comments...))
+	self.AssertThat(value, hamcrest.True().Comment(comments...))
 }
 
 func (self *_Asserter) AssertFalse(value bool, comments ...interface{}) {
-	self.AssertThat(value, hamcrest.False().AddComments(comments...))
+	self.AssertThat(value, hamcrest.False().Comment(comments...))
 }
 
 func (self *_Asserter) AssertNil(value interface{}, comments ...interface{}) {
-	self.AssertThat(value, hamcrest.Nil().AddComments(comments...))
+	self.AssertThat(value, hamcrest.Nil().Comment(comments...))
 }
 
 func (self *_Asserter) AssertNonNil(value interface{}, comments ...interface{}) {
-	self.AssertThat(value, hamcrest.NonNil().AddComments(comments...))
+	self.AssertThat(value, hamcrest.NonNil().Comment(comments...))
 }

@@ -12,7 +12,7 @@ Packages
 
 *  `hamcrest`:  Defines the types `Matcher` and `Result`, provides factory
     functions to create them, and defines several core Matchers:
-    `Is`, `Anything`, `True`, `False`, `Nil`, `EqualTo`, and `DeepEqualTo`
+    `Is`, `Anything`, `True`, `False`, `Nil`, `EqualTo`, and `DeeplyEqualTo`
     plus common logical compositions: `Not`, `And`, `Or`, `Nor`, `Xor`,
     and `If/Then`.
 
@@ -36,64 +36,41 @@ Expected future packages:
 *   `hamcrest/types`:  Matchers using type reflection.
 
 
-How to use hamcrest in tests:
-=============================
+How to use hamcrest for testing:
+================================
 
-Given a unit test that looks like this:
+To use Hamcrest matchers, one creates an `Asserter`
+and uses it to `Check` or `Assert` values.
 
-	package foo
-	
-	import "testing"
-	
-	func TestCoord(t *testing.T) {
-		coord := Coord(12, 34)
-		if coord.X != 12 {
-			t.Fatalf("Expected X to be 12, was %v", coord.X)
-		}
-		if coord.Y != 34 {
-			t.Fatalf("Expected Y to be 34, was %v", coord.Y)
-		}
-		if coord.String() != "[12, 34]" {
-			t.Errorf("Expected String() to be '[12, 34]', was %v", coord.String())
-		}
-		if other := Coord(12, 34); !reflect.DeepEquals(coord, other) {
-			t.Errorf("Similarly constructed coord %v should be deeply equal to %v",
-				other, coord)
-		}
-	}
-	
-To convert this example to Hamcrest matchers, one creates an `Asserter`
-and uses it to Check or Assert .
-
-	package foo
-	
-	import (
-		"testing"
-		"github.com/rdrdr/hamcrest.go/hamcrest"
-		"github.com/rdrdr/hamcrest.go/hamcrest/asserter"
-                "github.com/rdrdr/hamcrest.go/hamcrest/strings"
-	)
-	
-	func TestCoord(t *testing.T) {
-		Equals := hamcrest.DeeplyEqualTo
-		ToString := strings.ToString
-		
+	func TestPoint(t *testing.T) {
+		p := Point(3, 4)
 		we := asserter.Using(t)
-		coord := Coord(12, 34)
-		we.AssertThat(coord.X(), Equals(12).AddComment("X field"))
-		we.AssertThat(coord.Y(), Equals(34).AddComment("Y field"))
-		we.CheckThat(coord, ToString(Equals("[12, 34]"))))
-		we.CheckThat(coord, Equals(Coord(12, 34)).Comment("Similarly constructed coord"))
+		we.AssertThat(p.X, EqualTo(3).Comment("x coordinate"))
+		we.AssertThat(p.Y, EqualTo(4).Comment("y coordinate"))
+		we.CheckThat(p, ToString(EqualTo("[3, 4]")))
+		we.CheckThat(p, DeeplyEqualTo(Point(3, 4)))
 	}
 
-The `AssertThat` and `CheckThat` methods lead to stylized sentences for making
-test assertions.
+(`Assert` methods fail immediately, as `testing.T.FailNow`, while `Check`
+methods defer failure, as `testing.T.Fail`.)
+
+The `AssertThat` and `CheckThat` functions are designed to create
+conditional checks that read fluently as self-commenting code, and
+are self-describing when failures occur.  For example, the above
+test might fail with this message:
+	
+	FAILURE: input [4, 3] on EqualTo([12, 34])
+		Because: ([34, 12]) was not equal to ([12, 34])
+
+Effort invested in good self-describing matchers can be leveraged
+across many tests.
+
 
 A tour of common matchers
 =========================
 
 Hamcrest comes with a library of useful matchers. Here are some of the most
-important ones.
+common ones.
 
   * `Anything` - always matches
   * `EqualTo(obj)` - matches any object `x` where `x==obj` would be true
@@ -103,11 +80,19 @@ important ones.
   * `Not(matcher)` - logical not of `matcher`
   * `Nil` - matches objects whose types have an `IsNil()` method  which returns true for the object
   * `NonNil` - inverse of `Nil` matcher (equivalent to `Not(Nil)`)
-  * `Both(matcher1).And(matcher2)` - short-circuiting logical and 
-  * `Either(matcher1).Or(matcher2)` - short-circuiting logical or
-  * `Neither(matcher1).Nor(matcher2)` - short-circuiting logical nor
-  * `If(matcher1).Then(matcher2)` - short-circuiting logical if/then
-  * `Either(matcher1).Xor(matcher)` - logical xor (note: xor is never short-circuiting)
+  * `AnyOf(matchers...)` - short-circuiting n-ary logical Or
+  * `AllOf(matchers...)` - short-circuiting n-ary logical And
+
+Although it is possible to simulate these logical conditions using the above,
+separate version are provided to assist readability.
+
+  * `Is(matcher)` - equivalent to `matcher` (see =Syntactic sugar=, below)
+  * `Both(matcher1).And(matcher2)` - short-circuiting logical And 
+  * `Either(matcher1).Or(matcher2)` - short-circuiting logical Or
+  * `Neither(matcher1).Nor(matcher2)` - short-circuiting logical Nor
+  * `If(matcher1).Then(matcher2)` - short-circuiting logical If/Then
+  * `Iff(matcher1).Then(matcher2)` - logical If-And-Only-If (note: iff never short-circuits)
+  * `Either(matcher1).Xor(matcher)` - logical xor (note: xor never short-circuits)
 
 Syntactic sugar
 ===============
@@ -128,18 +113,24 @@ Example:
         match := func(actual interface{}) {
             if n, ok := actual.(int); ok {
                 if n % k == 0 {
-                    because := hamcrest.NewDescription("%v is divisible by %v", n, k)
+                    because := hamcrest.NewDescription(
+                        "%v is divisible by %v", n, k)
                     return hamcrest.NewResult(true, because)
                 }
-                because := hamcrest.NewDescription("%v is not divisible by %v", n, k)
+                because := hamcrest.NewDescription(
+                    "%v is not divisible by %v", n, k)
                 return hamcrest.NewResult(false, because)
             }
-            because := hamcrest.NewDescription("can't convert %v to int", actual)
+            because := hamcrest.NewDescription(
+                    "can't convert %T[%v] to int", actual, actual)
             return hamcrest.NewResult(false, because)
         }
-        return NewMatcher(hamcrest.NewDescription("multiple of %v", n), match)        
+        return NewMatcher(hamcrest.NewDescription("multiple of %v", n), match)
     }
 
 And used:
+    we.CheckThat(recordSize, IsMultipleOf(16).AddComment(
+        "profiling suggests better performance than 8, but 32 is unnecessary"))
 
-    we.CheckThat(13, IsMultipleOf(12).AddComment("A Bakers' Dozen"))
+        
+        
