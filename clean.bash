@@ -16,3 +16,4 @@ makeclean \
 	asserter \
 	reflect \
 	strings \
+	comparison \

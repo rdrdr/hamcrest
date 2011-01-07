@@ -19,4 +19,5 @@ maketest \
 	asserter \
 	reflect \
 	strings \
+	comparison \
 

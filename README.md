@@ -12,29 +12,32 @@ Packages
 
 *  `hamcrest`:  Defines the types `Matcher` and `Result`, provides factory
     functions to create them, and defines several core Matchers:
-    `Is`, `Anything`, `True`, `False`, `Nil`, `EqualTo`, and `DeeplyEqualTo`
+    `Is`, `Anything`, `True`, `False`, `Nil`, and `DeeplyEqualTo`
     plus common logical compositions: `Not`, `And`, `Or`, `Nor`, `Xor`,
     and `If/Then`.
 
+*   `hamcrest/reflect`:  Matchers using type reflection.
+
 *   `hamcrest/strings`:  Matchers for strings.
+
+*   `hamcrest/comparison`:  Comparison matchers for >=, <=, >, <, ==, and !=.
 
 *   `hamcrest/asserter`:  Defines an `Asserter` that can be used in conjunction 
     with Hamcrest Matchers to produce helpful logging messages at runtime
     (to stdout, stderr, or any object that implements io.Writer) or in
     unit tests (using `testing.T` from Go's standard `testing` package).
 
-    Note: this package isn't *really* part of Hamcrest:  it's just a handy
-    way of using the Hamcrest results in conjunction with the standard Go
-    testing package.
+    Note: the asserter package isn't *really* part of Hamcrest:  it's just
+    a handy way of using the Hamcrest results in conjunction with the
+    standard Go testing package.
 
 Expected future packages:
 
 *   `hamcrest/files`:  Matchers for files.
 *   `hamcrest/maps`:  Matchers for maps.
-*   `hamcrest/numbers`:  Matchers for numerical values.
-*   `hamcrest/slices`:  Matchers for slices.
-*   `hamcrest/types`:  Matchers using type reflection.
+*   `hamcrest/slices`:  Matchers for arrays and/or slices.
 
+Also, you can write your own Matchers (see *Custom matchers*, below)
 
 How to use hamcrest for testing:
 ================================
@@ -62,19 +65,20 @@ test might fail with this message:
 	
 	FAILURE on input &Point{X:3, Y:4}
 		Did not match ToString(EqualTo([3, 4]))
-		Because: String() was [4, 3]
+		Because: String() was "[4, 3]"
 			Did not match EqualTo[[3, 4]]
-			Because: [[4, 3]] was not equal to [[3, 4]]
+			Because: "[4, 3]" was not equal to "[3, 4]"
 
 Or:
-
 	FAILURE on input 5
 		Did not match EqualTo(5)
 		Because: uint 5 could not be compared to int 5
 		Comment: magnitude
 
-Note that the text descriptions are generated automatically by the
-matchers, so that the user 
+Note that the majority of the text descriptions are generated
+automatically by the matchers.  For typical uses of Hamcrest
+matchers, the code is largely self-documenting, and the error
+messages are detailed.
 
 Effort invested in good self-describing matchers can be leveraged
 across many tests.
@@ -85,13 +89,27 @@ Suggested use of hamcrest at runtime:
 Create an asserter using stderr and panic to ensure that
 globals are properly initialized:
 
+	var we = asserter.UsingStderr()
 	func init() {
-		we := asserter.UsingStderr()
 		for _, host := range hosts {
 			we.AssertThat(host, RespondsToPings())
 		}
 	}
 
+Or use it to verify that certain preconditions are met:
+	var we = asserter.UsingStderr()
+	func WriteTo(filename string) bool {
+		bufferSize := len(longer)
+		if !we.CheckThat(filename, IsWellFormedPath()).Matched() {
+			return false
+		}
+		// Use well-formed filename here.
+	}
+
+Note:  Since Hamcrest matchers allocate Description and Result objects
+to explain in great detail why they did or did not match, users should
+be generally aware of this cost when using matchers inside performance-
+critical loops.
 
 A tour of common matchers
 =========================
@@ -100,7 +118,6 @@ Hamcrest comes with a library of useful matchers. Here are some of the most
 common ones.
 
   * `Anything` - matches any input
-  * `EqualTo(obj)` - matches any input `x` where `x==obj` would be true
   * `DeeplyEqualTo(obj)` - matches any object `x` where `reflect.DeepEquals(x, obj)` is true
   * `True` - only matches bool `true`
   * `False` - only matches bool `false`
@@ -113,13 +130,13 @@ common ones.
 Although it is possible to simulate these logical conditions using the above,
 separate version are provided to assist readability.
 
-  * `Is(matcher)` - equivalent to `matcher` (see =Syntactic sugar=, below)
-  * `Both(matcher1).And(matcher2)` - short-circuiting logical And 
-  * `Either(matcher1).Or(matcher2)` - short-circuiting logical Or
-  * `Neither(matcher1).Nor(matcher2)` - short-circuiting logical Nor
-  * `If(matcher1).Then(matcher2)` - short-circuiting logical If/Then
-  * `Iff(matcher1).Then(matcher2)` - logical If-And-Only-If (note: iff never short-circuits)
-  * `Either(matcher1).Xor(matcher)` - logical xor (note: xor never short-circuits)
+  * `Is(matcher)` - equivalent to `matcher` (see *Syntactic sugar*, below)
+  * `Both(matcher1).And(matcher2)` - short-circuiting logical `And`, equivalent to `AllOf(matcher1, matcher2)`
+  * `Either(matcher1).Or(matcher2)` - short-circuiting logical `Or`, equivalent to `AnyOf(matcher1, matcher2)`
+  * `Neither(matcher1).Nor(matcher2)` - short-circuiting logical `Nor`
+  * `If(matcher1).Then(matcher2)` - short-circuiting logical `If/Then`
+  * `Iff(matcher1).Then(matcher2)` - logical `IfAndOnlyIf` (note: iff never short-circuits)
+  * `Either(matcher1).Xor(matcher)` - logical `Xor` (note: xor never short-circuits)
 
 Syntactic sugar
 ===============
@@ -140,24 +157,19 @@ Example:
         match := func(actual interface{}) {
             if n, ok := actual.(int); ok {
                 if n % k == 0 {
-                    because := hamcrest.NewDescription(
-                        "%v is divisible by %v", n, k)
-                    return hamcrest.NewResult(true, because)
+                    why := NewDescription("%v is a multiple of %v", n, k))
+                    return NewResult(true, why)
                 }
-                because := hamcrest.NewDescription(
-                    "%v is not divisible by %v", n, k)
-                return hamcrest.NewResult(false, because)
+                why := NewDescription("%v is not a multiple of %v", n, k))
+                return NewResult(false, why)
             }
-            because := hamcrest.NewDescription(
-                    "can't convert %T[%v] to int", actual, actual)
-            return hamcrest.NewResult(false, because)
+            why := NewDescription("can't convert %T[%v] to int", actual, actual))
+            return NewResult(false, why)
         }
         return NewMatcher(hamcrest.NewDescription("multiple of %v", n), match)
     }
 
 And used:
-    we.CheckThat(recordSize, IsMultipleOf(16).AddComment(
-        "profiling suggests better performance than 8, but 32 is unnecessary"))
+    we.CheckThat(recordSize, IsMultipleOf(8).Comment(
+        "profiling suggests better performance than 4"))
 
-        
-        
