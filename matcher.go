@@ -39,6 +39,7 @@ func (self *Description) String() string {
 // Self-describing result of applying a Matcher to an input value.
 type Result struct {
 	matched bool
+	value interface{}
 	matcher *Matcher
 	description *Description
 	causes []*Result
@@ -59,6 +60,11 @@ func (self *Result) Matched() bool {
 // Returns the Matcher that produced this Result.
 func (self *Result) Matcher() *Matcher {
 	return self.matcher
+}
+
+// Returns the value that was given to the Matcher to produce this Result.
+func (self *Result) Value() interface{} {
+	return self.value
 }
 
 // Implements fmt.Stringer.
@@ -115,10 +121,11 @@ func (self *Matcher) String() string {
 	return self.description.String()
 }
 
-// Tests the given input to see if it meets this Matcher's criteria.
-func (self *Matcher) Match(input interface{}) *Result {
-	result := self.match(input)
+// Tests the given input value to see if it meets this Matcher's criteria.
+func (self *Matcher) Match(value interface{}) *Result {
+	result := self.match(value)
 	result.matcher = self
+	result.value = value
 	return result
 }
 
