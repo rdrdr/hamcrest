@@ -69,6 +69,69 @@ func NewStringMatcher(description *hamcrest.Description, matchString func(s stri
 }
 
 
+// Creates a new matcher that applies the given matcher to the result of
+// converting an input string to lowercase (using strings.ToLower).
+// If the input value is not a string, the matcher fails to match.
+func ToLower(matcher *hamcrest.Matcher) *hamcrest.Matcher {
+	description := hamcrest.NewDescription("ToLower(%v)", matcher)
+	match := func(s string) *hamcrest.Result {
+		lower := strings.ToLower(s)
+		why := hamcrest.NewDescription("to lower is %v", lower)
+		result := matcher.Match(lower)
+		return hamcrest.NewResult(result.Matched(), why).WithCauses(result)
+	}
+	return NewStringMatcher(description, match)
+}
+
+
+// Creates a new matcher that applies the given matcher to the result of
+// converting an input string to uppercase (using strings.ToUpper).
+// If the input value is not a string, the matcher fails to match.
+func ToUpper(matcher *hamcrest.Matcher) *hamcrest.Matcher {
+	description := hamcrest.NewDescription("ToUpper(%v)", matcher)
+	match := func(s string) *hamcrest.Result {
+		upper := strings.ToUpper(s)
+		why := hamcrest.NewDescription("to upper is %v", upper)
+		result := matcher.Match(upper)
+		return hamcrest.NewResult(result.Matched(), why).WithCauses(result)
+	}
+	return NewStringMatcher(description, match)
+}
+
+func EqualToIgnoringCase(expected string) *hamcrest.Matcher {
+	description := hamcrest.NewDescription("EqualToIgnoringCase(\"%v\")", expected)
+	expectedToLower := strings.ToLower(expected)
+	match := func(actual string) *hamcrest.Result {
+		actualToLower := strings.ToLower(actual)
+		if actualToLower == expectedToLower {
+			why := hamcrest.NewDescription("\"%v\" matches \"%v\" (ignoring case)",
+				actual, expected)
+			return hamcrest.NewResult(true, why)
+		}
+		why := hamcrest.NewDescription("\"%v\" differs from \"%v\" (ignoring case)",
+			actual, expected)
+		return hamcrest.NewResult(false, why)
+	}
+	return NewStringMatcher(description, match)
+}
+
+
+
+// Creates a new matcher that applies the given matcher to the result of
+// converting an input string its length. (using the `len()` builtin).
+// If the input value is not a string, the matcher fails to match.
+func ToLen(matcher *hamcrest.Matcher) *hamcrest.Matcher {
+	description := hamcrest.NewDescription("ToLen(%v)", matcher)
+	match := func(s string) *hamcrest.Result {
+		length := len(s)
+		why := hamcrest.NewDescription("length is %v", length)
+		result := matcher.Match(length)
+		return hamcrest.NewResult(result.Matched(), why).WithCauses(result)
+	}
+	return NewStringMatcher(description, match)
+}
+
+
 // Matches strings that begin with the given prefix.
 func HasPrefix(prefix string) *hamcrest.Matcher {
 	description := hamcrest.NewDescription("HasPrefix(\"%v\")", prefix)
@@ -156,6 +219,83 @@ func HasPattern(pattern string) *hamcrest.Matcher {
 		}
 		why := hamcrest.NewDescription(
 			"pattern \"%v\" not found in \"%v\"", pattern, s)
+		return hamcrest.NewResult(false, why)
+	}
+	return NewStringMatcher(description, match)
+}
+
+type ExtractPatternClause struct {
+	re *regexp.Regexp
+}
+
+func ExtractPattern(pattern string) *ExtractPatternClause {
+	return &ExtractPatternClause{ re : regexp.MustCompile(pattern) }
+}
+
+// Completes a matcher that finds every occurrence of a pattern in the
+// given input and applies the matcher to it, only matching if every
+// occurrence matches.  For example:
+//    i_before_e_except := ToLower(ExtractPattern(".ei").Each(StartsWith("c")))
+// will match:
+//    "ceiling receipt"
+// but not:
+//    "deceiver seizure"
+func (self *ExtractPatternClause) Each(matcher *hamcrest.Matcher) *hamcrest.Matcher {
+	re := self.re
+	description := hamcrest.NewDescription("Each[\"%v\"][%v]", re, matcher)
+	match := func (s string) *hamcrest.Result {
+		matches := re.FindAllStringIndex(s, -1)
+		if matches == nil {
+			why := hamcrest.NewDescription("No occurrences of pattern")
+			return hamcrest.NewResult(true, why)
+		}
+		for _, loc := range matches {
+			start, end := loc[0], loc[1]
+			substring := s[start:end]
+			result := matcher.Match(substring)
+			if !result.Matched() {
+				why := hamcrest.NewDescription("did not match substring[%v:%v]=%v",
+					start, end, substring)
+				return hamcrest.NewResult(false, why)
+			}
+		}
+		why := hamcrest.NewDescription("Matched all occurrences of pattern")
+		return hamcrest.NewResult(true, why)
+	}
+	return NewStringMatcher(description, match)
+}
+
+// Completes a matcher that finds every occurrence of a pattern in the
+// given input and applies the matcher to it, only matching if at least
+// one occurrence matches.  For example:
+//    here_kitty := ExtractPattern(".at").Any(StartsWith("c"))
+// will match:
+//    "that cat is phat"
+// but not:
+//    "Matt spat at a rat"
+func (self *ExtractPatternClause) Any(matcher *hamcrest.Matcher) *hamcrest.Matcher {
+	re := self.re
+	description := hamcrest.NewDescription("Any[\"%v\"][%v]", re, matcher)
+	match := func (s string) *hamcrest.Result {
+		matches := re.FindAllStringIndex(s, -1)
+		if matches == nil {
+			why := hamcrest.NewDescription("No occurrences of pattern")
+			return hamcrest.NewResult(false, why)
+		}
+		occurrences := 0
+		for _, loc := range matches {
+			occurrences += 1
+			start, end := loc[0], loc[1]
+			substring := s[start:end]
+			result := matcher.Match(substring)
+			if result.Matched() {
+				why := hamcrest.NewDescription("matched substring[%v:%v]=%v",
+					start, end, substring)
+				return hamcrest.NewResult(true, why)
+			}
+		}
+		why := hamcrest.NewDescription(
+			"Matched none of the %v occurrences of pattern", occurrences)
 		return hamcrest.NewResult(false, why)
 	}
 	return NewStringMatcher(description, match)
