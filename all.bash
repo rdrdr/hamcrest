@@ -17,7 +17,8 @@ maketest() {
 maketest \
 	. \
 	asserter \
+	comparison \
+	collections \
 	reflect \
 	strings \
-	comparison \
 

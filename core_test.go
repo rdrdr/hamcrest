@@ -173,18 +173,6 @@ func Test_NonNil(t *testing.T) {
 	logSamples(t, matcher)
 }
 
-func Test_EqualTo(t *testing.T) {
-	matcher := EqualTo(42)
-	checkResultIsNonMatching(t, matcher.match(true), "bool")
-	checkResultIsMatching(t, matcher.match(42), "int")
-	checkResultIsNonMatching(t, matcher.match(uint(42)), "uint")
-	checkResultIsNonMatching(t, matcher.match(42.0), "float")
-	checkResultIsNonMatching(t, matcher.match(42+0i), "complex")
-	checkResultIsNonMatching(t, matcher.match("42"), "string")
-	checkResultIsNonMatching(t, matcher.match([]int{42}), "slice")
-	logSamples(t, matcher)
-}
-
 type _DeeplyEqualsType struct { x int }
 func Test_DeeplyEqualTo(t *testing.T) {
 	data := []interface{} {
@@ -232,7 +220,7 @@ func Test_AllOf(t *testing.T) {
 	if calledSnoop {
 		t.Errorf("AllOf should short-circuit before calling snoop")
 	}
-	logSamples(t, AllOf(Anything(), NonNil(), EqualTo(42)))
+	logSamples(t, AllOf(Anything(), NonNil(), DeeplyEqualTo(42)))
 }
 
 func Test_AnyOf(t *testing.T) {
@@ -250,7 +238,7 @@ func Test_AnyOf(t *testing.T) {
 	if calledSnoop {
 		t.Errorf("AnyOf should short-circuit before calling snoop")
 	}
-	logSamples(t, AnyOf(True(), Nil(), EqualTo(42)))
+	logSamples(t, AnyOf(True(), Nil(), DeeplyEqualTo(42)))
 }
 
 func Test_BothAnd(t *testing.T) {

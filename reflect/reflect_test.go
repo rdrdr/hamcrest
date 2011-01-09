@@ -12,7 +12,6 @@ import (
 	"testing"
 )
 
-var EqualTo = hamcrest.EqualTo
 var Anything = hamcrest.Anything
 var Is = hamcrest.Is
 var Not = hamcrest.Not

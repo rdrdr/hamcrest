@@ -73,6 +73,19 @@ func NewStringMatcher(description *hamcrest.Description, matchString func(s stri
 }
 
 
+func EqualTo(expected string) *hamcrest.Matcher {
+	description := hamcrest.NewDescription("EqualTo(\"%v\")", expected)
+	match := func (s string) *hamcrest.Result {
+		if s == expected {
+			why := hamcrest.NewDescription("was \"%v\"", s)
+			return hamcrest.NewResult(true, why)
+		}
+		why := hamcrest.NewDescription("was \"%v\", not \"%v\"", s, expected)
+		return hamcrest.NewResult(false, why)
+	}
+	return NewStringMatcher(description, match)
+}
+
 // Creates a new matcher that applies the given matcher to the result of
 // converting an input string to lowercase (using strings.ToLower).
 // If the input value is not a string, the matcher fails to match.

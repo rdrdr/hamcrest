@@ -13,9 +13,9 @@ import (
 	"testing"
 )
 
-var EqualTo = hamcrest.EqualTo
 var Not = hamcrest.Not
 var Anything = hamcrest.Anything
+var EqualTo = comparison.EqualTo
 var LessThan = comparison.LessThan
 var GreaterThan = comparison.GreaterThan
 

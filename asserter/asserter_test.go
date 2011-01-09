@@ -11,9 +11,6 @@ import (
 	"hamcrest"
 )
 
-var _EqualTo = hamcrest.EqualTo
-var _MatchAnything = hamcrest.Anything
-
 func newBuffer() *bytes.Buffer{
 	return bytes.NewBuffer(make([]byte, 0, 1000))
 }

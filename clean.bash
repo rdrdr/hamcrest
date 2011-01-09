@@ -14,6 +14,7 @@ makeclean() {
 makeclean \
 	. \
 	asserter \
+	comparison \
+	collections \
 	reflect \
 	strings \
-	comparison \

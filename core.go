@@ -132,7 +132,7 @@ type _CanAskIsNil interface { IsNil() bool }
 
 // Returns a Matcher that matches if the actual value is nil
 // or the nil value of its type.  (Note that this is *not*
-// equivalent to EqualTo(nil).)
+// equivalent to DeeplyEqualTo(nil).)
 func Nil() *Matcher {
 	return _Nil
 }
@@ -150,7 +150,7 @@ func init() {
 
 // Returns a Matcher that matches if the actual value is 
 // neither nil nor the nil value of its type.  (Note that
-// this is *not* equivalent to Not(EqualTo(nil)).)
+// this is *not* equivalent to Not(DeeplyEqualTo(nil)).)
 func NonNil() *Matcher {
 	return _NonNil
 }
@@ -166,27 +166,6 @@ func init() {
 	_NonNil = NewMatcher(NewDescription("matches non-nil"), match)
 }
 
-
-// Returns a Matcher that checks if the actual value is (shallowly)
-// equal to the given expected value, as if compared using ==.
-func EqualTo(expected interface{}) *Matcher {
-	expectedType := reflect.Typeof(expected)
-	match := func (actual interface{}) *Result {
-		actualType := reflect.Typeof(actual)
-		if actualType == expectedType {
-			if actual == expected {
-				because := NewDescription("was equal to [%v]", expected)
-				return NewResult(true, because)
-			}
-			because := NewDescription("[%v] was not equal to [%v]", actual, expected)
-			return NewResult(false, because)
-		}
-		because := NewDescription("%v[%v] could not be compared to %v[%v]",
-				actualType, actual, expectedType, expected)
-		return NewResult(false, because)
-	}
-	return NewMatcher(NewDescription("EqualTo[%v]", expected), match)
-}
 
 // Returns a Matcher that checks if the actual value is (deeply)
 // equal to the given expected value, using reflect.DeepEqual.
