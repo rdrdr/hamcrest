@@ -41,21 +41,24 @@ type Asserter interface {
 	// and invokes the immediate failure action.
 	FailNow()
 	
+	// Writes the given result to the underlying logger.
+	LogResult(result *hamcrest.Result)
+	
 	// On a successful match, describes the result of applying
 	// the given matcher to the given value.
-	LogWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
+	LogWhen(value interface{}, matcher *hamcrest.Matcher)
 	
 	// On an unsuccessful match, describes the result of applying
 	// the given matcher to the given value.
-	LogUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
+	LogUnless(value interface{}, matcher *hamcrest.Matcher)
 	
 	// On a successful match, describes the result of applying
 	// the given matcher to the given value and invokes Fail().
-	FailWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
+	FailWhen(value interface{}, matcher *hamcrest.Matcher)
 	
 	// On an unsuccessful match, describes the result of applying
 	// the given matcher to the given value and invokes Fail().
-	FailUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
+	FailUnless(value interface{}, matcher *hamcrest.Matcher)
 	
 	// On a successful match, describes the result of applying
 	// the given matcher to the given value and invokes FailNow().
@@ -66,19 +69,19 @@ type Asserter interface {
 	FailNowUnless(value interface{}, matcher *hamcrest.Matcher)
 	
 	// Equivalent to FailUnless.
-	CheckThat(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result
+	CheckThat(value interface{}, matcher *hamcrest.Matcher)
 	
 	// Equivalent to FailUnless with the True matcher.
-	CheckTrue(value bool, messages ...interface{}) *hamcrest.Result
+	CheckTrue(value bool, messages ...interface{})
 	
 	// Equivalent to FailUnless with the False matcher.
-	CheckFalse(value bool, messages ...interface{}) *hamcrest.Result
+	CheckFalse(value bool, messages ...interface{})
 	
 	// Equivalent to FailUnless with the Nil matcher.
-	CheckNil(value interface{}, messages ...interface{}) *hamcrest.Result
+	CheckNil(value interface{}, messages ...interface{})
 	
 	// Equivalent to FailUnless with the NonNil matcher.
-	CheckNonNil(value interface{}, messages ...interface{}) *hamcrest.Result
+	CheckNonNil(value interface{}, messages ...interface{})
 	
 	// Equivalent to FailNowUnless.
 	AssertThat(value interface{}, matcher *hamcrest.Matcher)
@@ -157,17 +160,18 @@ type _NullAsserter struct {}
 func (self *_NullAsserter) Fail() {}
 func (self *_NullAsserter) FailNow() {}
 func (self *_NullAsserter) Failed() bool { return false }
-func (self *_NullAsserter) LogWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result { return nil }
-func (self *_NullAsserter) LogUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result { return nil }
-func (self *_NullAsserter) FailWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result { return nil }
-func (self *_NullAsserter) FailUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result { return nil }
+func (self *_NullAsserter) LogResult(result *hamcrest.Result) { }
+func (self *_NullAsserter) LogWhen(value interface{}, matcher *hamcrest.Matcher) { }
+func (self *_NullAsserter) LogUnless(value interface{}, matcher *hamcrest.Matcher) { }
+func (self *_NullAsserter) FailWhen(value interface{}, matcher *hamcrest.Matcher) { }
+func (self *_NullAsserter) FailUnless(value interface{}, matcher *hamcrest.Matcher) { }
 func (self *_NullAsserter) FailNowWhen(value interface{}, matcher *hamcrest.Matcher) { }
 func (self *_NullAsserter) FailNowUnless(value interface{}, matcher *hamcrest.Matcher) { }
-func (self *_NullAsserter) CheckThat(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result { return nil }
-func (self *_NullAsserter) CheckTrue(value bool, comments ...interface{}) *hamcrest.Result { return nil }
-func (self *_NullAsserter) CheckFalse(value bool, comments ...interface{}) *hamcrest.Result { return nil }
-func (self *_NullAsserter) CheckNil(value interface{}, comments ...interface{}) *hamcrest.Result { return nil }
-func (self *_NullAsserter) CheckNonNil(value interface{}, comments ...interface{}) *hamcrest.Result { return nil }
+func (self *_NullAsserter) CheckThat(value interface{}, matcher *hamcrest.Matcher) { }
+func (self *_NullAsserter) CheckTrue(value bool, comments ...interface{}) { }
+func (self *_NullAsserter) CheckFalse(value bool, comments ...interface{}) { }
+func (self *_NullAsserter) CheckNil(value interface{}, comments ...interface{}) { }
+func (self *_NullAsserter) CheckNonNil(value interface{}, comments ...interface{}) { }
 func (self *_NullAsserter) AssertThat(value interface{}, matcher *hamcrest.Matcher) { }
 func (self *_NullAsserter) AssertTrue(value bool, comments ...interface{}) { }
 func (self *_NullAsserter) AssertFalse(value bool, comments ...interface{}) { }
@@ -203,86 +207,86 @@ func safeMatch(value interface{}, matcher *hamcrest.Matcher) (result *hamcrest.R
 
 
 // Insert final newline if needed and indent tabs after internal newlines.
-func (self *_Asserter) _LogWithCauses(previousIndent string, result *hamcrest.Result) {
-	indent := previousIndent + "\t"
+func (self *_Asserter) _LogResult(indent string, result *hamcrest.Result) {
 	matcher := result.Matcher()
+	value := result.Value()
 	if result.Matched() {
-		self.logger.Logf("%vMatched %v\n", indent, matcher)
+		self.logger.Logf("%vMATCHED input %v\n", indent, value)
 	} else {
-		self.logger.Logf("%vDid not match %v\n", indent, matcher)
+		self.logger.Logf("%vDID NOT MATCH input %v\n", indent, value)
 	}
+	self.logger.Logf("%vMatcher: %v\n", indent, matcher)
 	self.logger.Logf("%vBecause: %v\n", indent, result)
 	for _, comment := range matcher.Comments() {
 		self.logger.Logf("%vComment: %v\n", indent, comment)
 	}
+	causeIndent := indent + "\t"
 	for _, cause := range result.Causes() {
-		self._LogWithCauses(indent, cause)
+		self._LogResult(causeIndent, cause)
 	}
 }
 
-func (self *_Asserter) LogWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result {
-	result := safeMatch(value, matcher)
-	if result.Matched() {
-		self.logger.Logf("MATCHED on input %#v\n", value)
-		self._LogWithCauses("", result)
-	}
-	return result
+func (self *_Asserter) LogResult(result *hamcrest.Result) {
+	self._LogResult("", result)
 }
 
-func (self *_Asserter) LogUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result {
-	result := safeMatch(value, matcher)
-	if !result.Matched() {
-		self.logger.Logf("FAILURE on input %#v\n", value)
-		self._LogWithCauses("", result)
+func (self *_Asserter) LogWhen(value interface{}, matcher *hamcrest.Matcher) {
+	if result := safeMatch(value, matcher); result.Matched() {
+		self.LogResult(result)
 	}
-	return result
 }
 
-func (self *_Asserter) FailWhen(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result {
-	result := self.LogWhen(value, matcher)
-	if result.Matched() {
+func (self *_Asserter) LogUnless(value interface{}, matcher *hamcrest.Matcher) {
+	if result := safeMatch(value, matcher); !result.Matched() {
+		self.LogResult(result)
+	}
+}
+
+func (self *_Asserter) FailWhen(value interface{}, matcher *hamcrest.Matcher) {
+	if result := safeMatch(value, matcher); result.Matched() {
+		self.LogResult(result)
 		self.Fail()
 	}
-	return result
 }
 	
-func (self *_Asserter) FailUnless(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result {
-	result := self.LogUnless(value, matcher)
-	if !result.Matched() {
+func (self *_Asserter) FailUnless(value interface{}, matcher *hamcrest.Matcher) {
+	if result := safeMatch(value, matcher); !result.Matched() {
+		self.LogResult(result)
 		self.Fail()
 	}
-	return result
 }
 
 func (self *_Asserter) FailNowWhen(value interface{}, matcher *hamcrest.Matcher) {
-	if self.LogWhen(value, matcher).Matched() {
+	if result := safeMatch(value, matcher); result.Matched() {
+		self.LogResult(result)
 		self.FailNow()
 	}
 }
 func (self *_Asserter) FailNowUnless(value interface{}, matcher *hamcrest.Matcher) {
-	if !self.LogUnless(value, matcher).Matched() {
+	if result := safeMatch(value, matcher); !result.Matched() {
+		self.LogResult(result)
 		self.FailNow()
 	}
 }
 	
-func (self *_Asserter) CheckThat(value interface{}, matcher *hamcrest.Matcher) *hamcrest.Result {
-	return self.FailUnless(value, matcher)
+func (self *_Asserter) CheckThat(value interface{}, matcher *hamcrest.Matcher) {
+	self.FailUnless(value, matcher)
 }
 
-func (self *_Asserter) CheckTrue(value bool, comments ...interface{}) *hamcrest.Result {
-	return self.CheckThat(value, hamcrest.True().Comment(comments...))
+func (self *_Asserter) CheckTrue(value bool, comments ...interface{}) {
+	self.CheckThat(value, hamcrest.True().Comment(comments...))
 }
 
-func (self *_Asserter) CheckFalse(value bool, comments ...interface{}) *hamcrest.Result {
-	return self.CheckThat(value, hamcrest.False().Comment(comments...))
+func (self *_Asserter) CheckFalse(value bool, comments ...interface{}) {
+	self.CheckThat(value, hamcrest.False().Comment(comments...))
 }
 
-func (self *_Asserter) CheckNil(value interface{}, comments ...interface{}) *hamcrest.Result {
-	return self.CheckThat(value, hamcrest.Nil().Comment(comments...))
+func (self *_Asserter) CheckNil(value interface{}, comments ...interface{}) {
+	self.CheckThat(value, hamcrest.Nil().Comment(comments...))
 }
 
-func (self *_Asserter) CheckNonNil(value interface{}, comments ...interface{}) *hamcrest.Result {
-	return self.CheckThat(value, hamcrest.NonNil().Comment(comments...))
+func (self *_Asserter) CheckNonNil(value interface{}, comments ...interface{}) {
+	self.CheckThat(value, hamcrest.NonNil().Comment(comments...))
 }
 
 func (self *_Asserter) AssertThat(value interface{}, matcher *hamcrest.Matcher) {

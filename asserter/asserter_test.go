@@ -91,32 +91,28 @@ var MATCHER = hamcrest.NewMatcher(
 func Test_LogWhen_onNonMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)
-	result := asserter.LogWhen(NONMATCHING_VALUE, MATCHER)
-	checkResultIsNonMatching(t, result, "Prerequisite for test")
+	asserter.LogWhen(NONMATCHING_VALUE, MATCHER)
 	checkBufferIsEmpty(t, buffer)
 }
 
 func Test_LogWhen_onMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)
-	result := asserter.LogWhen(MATCHING_VALUE, MATCHER)
-	checkResultIsMatching(t, result, "Prerequisite for test")
+	asserter.LogWhen(MATCHING_VALUE, MATCHER)
 	checkBufferContainsMatchingStrings(t, buffer)
 }
 
 func Test_LogUnless_onMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)
-	result := asserter.LogUnless(MATCHING_VALUE, MATCHER)
-	checkResultIsMatching(t, result, "Prerequisite for test")
+	asserter.LogUnless(MATCHING_VALUE, MATCHER)
 	checkBufferIsEmpty(t, buffer)
 }
 
 func Test_LogUnless_onNonMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)
-	result := asserter.LogUnless(NONMATCHING_VALUE, MATCHER)
-	checkResultIsNonMatching(t, result, "Prerequisite for test")
+	asserter.LogUnless(NONMATCHING_VALUE, MATCHER)
 	checkBufferContainsNonMatchingStrings(t, buffer)
 
 }
@@ -124,16 +120,14 @@ func Test_LogUnless_onNonMatchingResult(t *testing.T) {
 func Test_FailWhen_onNonMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)
-	result := asserter.FailWhen(false, hamcrest.True())
-	checkResultIsNonMatching(t, result, "Prerequisite for test")
+	asserter.FailWhen(false, hamcrest.True())
 	checkBufferIsEmpty(t, buffer)
 	checkAsserterDidNotFail(t, asserter)
 }
 func Test_FailWhen_onMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)
-	result := asserter.FailWhen(MATCHING_VALUE, MATCHER)
-	checkResultIsMatching(t, result, "Prerequisite for test")
+	asserter.FailWhen(MATCHING_VALUE, MATCHER)
 	checkBufferContainsMatchingStrings(t, buffer)
 	checkAsserterFailed(t, asserter)
 }
@@ -141,16 +135,14 @@ func Test_FailWhen_onMatchingResult(t *testing.T) {
 func Test_FailUnless_onMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)
-	result := asserter.FailUnless(MATCHING_VALUE, MATCHER)
-	checkResultIsMatching(t, result, "Prerequisite for test")
+	asserter.FailUnless(MATCHING_VALUE, MATCHER)
 	checkBufferIsEmpty(t, buffer)
 	checkAsserterDidNotFail(t, asserter)
 }
 func Test_FailUnless_onNonMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)
-	result := asserter.FailUnless(NONMATCHING_VALUE, MATCHER)
-	checkResultIsNonMatching(t, result, "Prerequisite for test")
+	asserter.FailUnless(NONMATCHING_VALUE, MATCHER)
 	checkBufferContainsNonMatchingStrings(t, buffer)
 	checkAsserterFailed(t, asserter)
 }
@@ -202,20 +194,23 @@ func Test_FailNowUnless_onNonMatchingResult(t *testing.T) {
 	}
 }
 
-func Test_CheckThat(t *testing.T) {
+func Test_CheckThat_onMatchingResult(t *testing.T) {
 	buffer := newBuffer()
-	var calledFailNow bool
+	calledFailNow := false
 	asserter := UsingWriterAndFailNow(buffer, func() { calledFailNow = true} )
-	result := asserter.CheckThat(MATCHING_VALUE, MATCHER)
-	checkResultIsMatching(t, result, "Prerequisite for test")
+	asserter.CheckThat(MATCHING_VALUE, MATCHER)
 	checkBufferIsEmpty(t, buffer)
 	checkAsserterDidNotFail(t, asserter)
 	if calledFailNow {
 		t.Error("Should not have called failNow")
 	}
-	
-	result = asserter.CheckThat(NONMATCHING_VALUE, MATCHER)
-	checkResultIsNonMatching(t, result, "Prerequisite for test")
+}
+
+func Test_CheckThat_onNonMatchingResult(t *testing.T) {
+	buffer := newBuffer()
+	calledFailNow := false
+	asserter := UsingWriterAndFailNow(buffer, func() { calledFailNow = true} )
+	asserter.CheckThat(NONMATCHING_VALUE, MATCHER)
 	checkBufferContainsNonMatchingStrings(t, buffer)
 	checkAsserterFailed(t, asserter)
 	if calledFailNow {
@@ -225,7 +220,7 @@ func Test_CheckThat(t *testing.T) {
 
 func Test_AssertThat(t *testing.T) {
 	buffer := newBuffer()
-	var calledFailNow bool
+	calledFailNow := false
 	asserter := UsingWriterAndFailNow(buffer, func() { calledFailNow = true} )
 	asserter.AssertThat(NONMATCHING_VALUE, MATCHER)
 	checkBufferContainsNonMatchingStrings(t, buffer)
