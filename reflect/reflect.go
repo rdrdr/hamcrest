@@ -9,6 +9,8 @@ import (
 	"reflect"
 )
 
+// Returns a new matcher that applies the type of its input
+// element to the given matcher.
 func ToType(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 	description := hamcrest.NewDescription("ToType(%v)", matcher)
 	match := func(actual interface{}) *hamcrest.Result {
@@ -19,6 +21,13 @@ func ToType(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 		return hamcrest.NewResult(result.Matched(), why).WithCauses(result)
 	}
 	return hamcrest.NewMatcher(description, match)
+}
+
+// Returns a matcher that matches any object with the same
+// type as the given example.
+func SameTypeAs(example interface{}) *hamcrest.Matcher {
+	exampleType := reflect.Typeof(example)
+	return _TypeMatcher(exampleType.Name(), exampleType)
 }
 
 func _TypeMatcher(name string, expectedType reflect.Type) *hamcrest.Matcher {
@@ -330,8 +339,7 @@ func MapTypeOf(keyTypeMatcher, elementTypeMatcher *hamcrest.Matcher) *hamcrest.M
 // Note:  this matches maps, not map *types*.  (See MapTypeOf.)
 //
 // This matcher is logically equivalent to:
-//    Both(MapWithKeyType(keyTypeMatcher)).
-//        And(MapWithElementType(elementTypeMatcher))
+//    AllOf(MapWithKeyType(keyTypeMatcher), MapWithElementType(elementTypeMatcher))
 // but may be easier to read/type.
 func MapOf(keyTypeMatcher, elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 	match := func(actual interface{}) *hamcrest.Result {

@@ -5,6 +5,15 @@ Hamcrest is a fluent framework for declarative Matcher objects
 that, when applied to input values, produce self-describing
 results.
 
+Installation:
+========
+
+To install, run `all.bash`.
+
+Alternatively, run `make install` in each package that you wish to use,
+starting with `hamcrest` and `hamcrest/asserter`.  Keep in mind that a
+few of the packages have dependencies on other packages.
+
 Packages
 ========
 
@@ -12,16 +21,19 @@ Packages
 
 *   `hamcrest`:  Defines the types `Matcher` and `Result`, provides factory
     functions to create them, and defines several core Matchers:
-    `Is`, `Anything`, `True`, `False`, `Nil`, and `DeeplyEqualTo`.
+    `Is`, `Anything`, `True`, `False`, `Nil`, `DeeplyEqualTo`, `AnyOf`, and
+    `AllOf`.
 
-*   `hamcrest/collections`:  Matchers on arrays/slices and maps.
+*   `hamcrest/collections`:  Matchers on arrays/slices and maps, such as
+    `EachElement`, `EveryElement`, `EachMapElement`, `EveryMapElement`.
 
 *   `hamcrest/comparison`:  Comparison matchers for >=, <=, >, <, ==, and !=.
 
 *   `hamcrest/logic`:   Matchers for compound logical statements:
     `Not`, `And`, `Or`, `Nor`, `Xor`, `If/Then`, and `Iff`.
 
-*   `hamcrest/reflect`:  Matchers using type reflection.
+*   `hamcrest/reflect`:  Matchers using type reflection, such as `ToType`,
+    `SameTypeAs`, `SliceOf`, `MapOf`, etc.
 
 *   `hamcrest/strings`:  Matchers for strings.
 

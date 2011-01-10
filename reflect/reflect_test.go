@@ -16,6 +16,16 @@ var Anything = hamcrest.Anything
 var Is = hamcrest.Is
 var Not = hamcrest.Not
 
+
+func Test_SameTypeAs(t *testing.T) {
+	we := asserter.Using(t)
+	
+	we.CheckThat(true, Is(SameTypeAs(false)))
+	we.CheckThat(false, Is(SameTypeAs(true)))
+	we.CheckThat(1, Is(SameTypeAs(2)))
+	we.CheckThat(int(1), Is(Not(SameTypeAs(uint(1)))))
+}
+
 func Test_Bool_And_BoolType(t *testing.T) {
 	we := asserter.Using(t)
 	checkMatch := func(v interface{}) {
