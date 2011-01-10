@@ -17,6 +17,7 @@ maketest() {
 maketest \
 	. \
 	asserter \
+	logic \
 	comparison \
 	collections \
 	reflect \

@@ -15,7 +15,6 @@ import (
 
 var Anything = hamcrest.Anything
 var Not = hamcrest.Not
-var Both = hamcrest.Both
 
 func Test_ToString_builtinTypes(t *testing.T) {
 	we := asserter.Using(t)
