@@ -4,7 +4,7 @@
 
 include $(GOROOT)/src/Make.inc
 
-PACKAGES=\
+DEPS=\
 	hamcrest \
 	hamcrest/asserter \
 	hamcrest/logic \
@@ -13,36 +13,44 @@ PACKAGES=\
 	hamcrest/reflect \
 	hamcrest/strings \
 
+TARG=hamcrest_demo
+
+GOFILES=\
+	hamcrest_demo.go \
+
+include $(GOROOT)/src/Make.cmd
+
+
 all:
-	for package in $(PACKAGES); do \
-		echo "Cleaning $${package}" ; \
-		pushd $${package} ; gomake clean ; gomake ; gomake install ; gotest ; popd ; \
+	for dep in $(DEPS); do \
+		echo "Cleaning $${dep}" ; \
+		pushd $${dep} ; gomake clean ; gomake ; gomake install ; gotest ; popd ; \
 	done;
 
 clean:
-	for package in $(PACKAGES); do \
-		echo "Cleaning $${package}" ; \
-		pushd $${package} ; gomake clean ; popd ; \
+	for dep in $(DEPS); do \
+		echo "Cleaning $${dep}" ; \
+		pushd $${dep} ; gomake clean ; popd ; \
 	done;
 
 
 install:
-	for package in $(PACKAGES); do \
-		echo "Installing $${package}" ; \
-		pushd $${package} ; gomake install ; popd ; \
+	for dep in $(DEPS); do \
+		echo "Installing $${dep}" ; \
+		pushd $${dep} ; gomake install ; popd ; \
 	done
 
 
 test:
-	for package in $(PACKAGES); do \
-		echo "Testing $${package}" ; \
-		pushd $${package} ; gotest ; popd ; \
+	for dep in $(DEPS); do \
+		echo "Testing $${dep}" ; \
+		pushd $${dep} ; gotest ; popd ; \
 	done
 
 
 uninstall:
-	for package in $(PACKAGES); do \
-		echo "Uninstalling $${package}" ; \
-		rm -rf $(GOROOT)/pkg/$(GOOS)_$(GOARCH)/"$${package}".a ; \
+	for dep in $(DEPS); do \
+		echo "Uninstalling $${dep}" ; \
+		rm -rf $(GOROOT)/pkg/$(GOOS)_$(GOARCH)/"$${dep}".a ; \
 	done
 
