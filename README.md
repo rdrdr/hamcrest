@@ -8,11 +8,8 @@ results.
 Installation:
 ========
 
-To install, run `all.bash`.
-
-Alternatively, run `make install` in each package that you wish to use,
-starting with `hamcrest` and `hamcrest/asserter`.  Keep in mind that a
-few of the packages have dependencies on other packages.
+To install, run `make` from the same directory as this
+`README.md` file.
 
 Packages
 ========
