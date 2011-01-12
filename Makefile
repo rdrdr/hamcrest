@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+include $(GOROOT)/src/Make.inc
+
 PACKAGES=\
 	hamcrest \
 	hamcrest/asserter \
@@ -12,8 +14,16 @@ PACKAGES=\
 	hamcrest/strings \
 
 
-all: clean build test
+TARG=pkg
+GOFILES=\
+	doc.go\
 
+
+all:
+	for package in $(PACKAGES); do \
+		echo "Cleaning $${package}" ; \
+		pushd $${package} ; gomake clean ; gomake ; gomake install ; gotest ; popd ; \
+	done;
 
 clean:
 	for package in $(PACKAGES); do \
@@ -35,3 +45,4 @@ test:
 		pushd $${package} ; gotest ; popd ; \
 	done
 
+include $(GOROOT)/src/Make.pkg
