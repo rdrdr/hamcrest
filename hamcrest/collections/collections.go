@@ -26,7 +26,7 @@ func AnyElement(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 				if result.Matched() {
 					why := hamcrest.NewDescription(
 						"Matched element %v of %v: %v", i+1, n, elem)
-					return hamcrest.NewResult(true, why)
+					return hamcrest.NewResult(true, why).WithCauses(result)
 				}
 			}
 			why := hamcrest.NewDescription(
@@ -50,7 +50,7 @@ func EveryElement(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 				if !result.Matched() {
 					why := hamcrest.NewDescription(
 						"Failed to match element %v of %v: %v", i+1, n, elem)
-					return hamcrest.NewResult(false, why)
+					return hamcrest.NewResult(false, why).WithCauses(result)
 				}
 			}
 			why := hamcrest.NewDescription(
@@ -74,7 +74,7 @@ func AnyMapElement(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 				if result.Matched() {
 					why := hamcrest.NewDescription(
 						"Matched element %v of %v: %v", i+1, len(keys), elem)
-					return hamcrest.NewResult(true, why)
+					return hamcrest.NewResult(true, why).WithCauses(result)
 				}
 			}
 			why := hamcrest.NewDescription(
@@ -98,7 +98,7 @@ func EveryMapElement(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 				if !result.Matched() {
 					why := hamcrest.NewDescription(
 						"Failed to match map element at key[%v]: %v", key, elem)
-					return hamcrest.NewResult(false, why)
+					return hamcrest.NewResult(false, why).WithCauses(result)
 				}
 			}
 			why := hamcrest.NewDescription(
@@ -110,5 +110,40 @@ func EveryMapElement(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 	return hamcrest.NewMatcher(description, match)
 }
 
+type _HasLen interface { Len() int }
 
+// Applies the given matcher to the length of the input element,
+// if the input element is an array, slice, or map.
+func ToLen(matcher *hamcrest.Matcher) *hamcrest.Matcher {
+	description := hamcrest.NewDescription("ToLen[%v]", matcher)
+	match := func(actual interface{}) *hamcrest.Result {
+		value := reflect.NewValue(actual)
+		if hasLen, ok := value.(_HasLen); ok {
+			length := hasLen.Len()
+			result := matcher.Match(length)
+			why := hamcrest.NewDescription("Len() returned %v", length)
+			return hamcrest.NewResult(result.Matched(), why)
+		}
+		why := hamcrest.NewDescription("Can't determine Len() for %T", actual)
+		return hamcrest.NewResult(false, why)
+	}
+	return hamcrest.NewMatcher(description, match)
+}
+
+
+// Matches any input element that is an empty array, slice, or map.
+func Empty() *hamcrest.Matcher {
+	description := hamcrest.NewDescription("Empty")
+	match := func(actual interface{}) *hamcrest.Result {
+		value := reflect.NewValue(actual)
+		if hasLen, ok := value.(_HasLen); ok {
+			length := hasLen.Len()
+			why := hamcrest.NewDescription("Len() returned %v", length)
+			return hamcrest.NewResult(length == 0, why)
+		}
+		why := hamcrest.NewDescription("Can't determine length of type %T", actual)
+		return hamcrest.NewResult(false, why)
+	}
+	return hamcrest.NewMatcher(description, match)
+}
 

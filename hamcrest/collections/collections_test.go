@@ -13,6 +13,7 @@ import (
 	"testing"
 )
 
+var Is = hamcrest.Is
 var Not = hamcrest.Not
 var Anything = hamcrest.Anything
 var EqualTo = comparison.EqualTo
@@ -59,22 +60,75 @@ func Test_AnyMapElement(t *testing.T) {
 	we := asserter.Using(t)
 	twoMap := map[string]int{ "foo": 1, "bar": 2 }
 	emptyMap := map[string]int{}
-	we.CheckThat(twoMap, AnyMapElement(EqualTo(1)).Comment("entry [foo: 1]"))
-	we.CheckThat(twoMap, AnyMapElement(EqualTo(2)).Comment("entry [bar: 2]"))
-	we.CheckThat(twoMap, Not(AnyMapElement(EqualTo(3))).Comment("neither entry matches"))
-	we.CheckThat(emptyMap, Not(AnyMapElement(Anything())).Comment("no entries"))
+	we.CheckThat(twoMap, AnyMapElement(EqualTo(1)).
+		Comment("entry [foo: 1]"))
+	we.CheckThat(twoMap, AnyMapElement(EqualTo(2)).
+		Comment("entry [bar: 2]"))
+	we.CheckThat(twoMap, Not(AnyMapElement(EqualTo(3))).
+		Comment("neither entry matches"))
+	we.CheckThat(emptyMap, Not(AnyMapElement(Anything())).
+		Comment("no entries"))
 }
 
 func Test_EveryMapElement(t *testing.T) {
 	we := asserter.Using(t)
 	twoMap := map[string]int{ "foo": 1, "bar": 2 }
 	emptyMap := map[string]int{}
-	we.CheckThat(twoMap, EveryMapElement(GreaterThan(0)).Comment("all elements"))
-	we.CheckThat(twoMap, Not(EveryMapElement(GreaterThan(1))).Comment("not entry [foo: 1]"))
-	we.CheckThat(twoMap, Not(EveryMapElement(LessThan(2))).Comment("not entry [bar: 2]"))
-	we.CheckThat(emptyMap, EveryMapElement(Anything()).Comment("no entries"))
+	we.CheckThat(twoMap, EveryMapElement(GreaterThan(0)).
+		Comment("all entries"))
+	we.CheckThat(twoMap, Not(EveryMapElement(GreaterThan(1))).
+		Comment("not entry [foo: 1]"))
+	we.CheckThat(twoMap, Not(EveryMapElement(LessThan(2))).
+		Comment("not entry [bar: 2]"))
+	we.CheckThat(emptyMap, EveryMapElement(Anything()).
+		Comment("no entries"))
 }
 
+func Test_ToLen_onArrays(t *testing.T) {
+	we := asserter.Using(t)
+	empty := [...]string{}
+	hasTwo := [...]string{"itsy", "bitsy"}
+	we.CheckThat(empty, ToLen(EqualTo(0)))
+	we.CheckThat(hasTwo, ToLen(EqualTo(2)))
+}
 
+func Test_ToLen_onSlices(t *testing.T) {
+	we := asserter.Using(t)
+	empty := []string{}
+	hasTwo := []string{"itsy", "bitsy"}
+	we.CheckThat(empty, ToLen(Is(EqualTo(0))))
+	we.CheckThat(hasTwo, ToLen(Is(EqualTo(2))))
+}
 
+func Test_ToLen_onMaps(t *testing.T) {
+	we := asserter.Using(t)
+	empty := map[string]int{}
+	hasTwo := map[string]int{ "foo": 1, "bar": 2 }
+	we.CheckThat(empty, ToLen(Is(EqualTo(0))))
+	we.CheckThat(hasTwo, ToLen(Is(EqualTo(2))))
+}
+
+func Test_Empty_onArrays(t *testing.T) {
+	we := asserter.Using(t)
+	empty := [...]string{}
+	hasTwo := [...]string{"itsy", "bitsy"}
+	we.CheckThat(empty, Is(Empty()))
+	we.CheckThat(hasTwo, Is(Not(Empty())))
+}
+
+func Test_Empty_onSlices(t *testing.T) {
+	we := asserter.Using(t)
+	empty := []string{}
+	hasTwo := []string{"itsy", "bitsy"}
+	we.CheckThat(empty, Is(Empty()))
+	we.CheckThat(hasTwo, Is(Not(Empty())))
+}
+
+func Test_Empty_onMaps(t *testing.T) {
+	we := asserter.Using(t)
+	empty := map[string]int{}
+	hasTwo := map[string]int{ "foo": 1, "bar": 2 }
+	we.CheckThat(empty, Is(Empty()))
+	we.CheckThat(hasTwo, Is(Not(Empty())))
+}
 
