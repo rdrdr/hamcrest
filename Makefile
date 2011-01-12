@@ -13,12 +13,6 @@ PACKAGES=\
 	hamcrest/reflect \
 	hamcrest/strings \
 
-
-TARG=pkg
-GOFILES=\
-	doc.go\
-
-
 all:
 	for package in $(PACKAGES); do \
 		echo "Cleaning $${package}" ; \
@@ -32,7 +26,7 @@ clean:
 	done;
 
 
-build:
+install:
 	for package in $(PACKAGES); do \
 		echo "Installing $${package}" ; \
 		pushd $${package} ; gomake install ; popd ; \
@@ -45,4 +39,10 @@ test:
 		pushd $${package} ; gotest ; popd ; \
 	done
 
-include $(GOROOT)/src/Make.pkg
+
+uninstall:
+	for package in $(PACKAGES); do \
+		echo "Uninstalling $${package}" ; \
+		rm -rf $(GOROOT)/pkg/$(GOOS)_$(GOARCH)/"$${package}".a ; \
+	done
+
