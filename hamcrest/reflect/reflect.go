@@ -12,15 +12,14 @@ import (
 // Returns a new matcher that applies the type of its input
 // element to the given matcher.
 func ToType(matcher *hamcrest.Matcher) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("ToType(%v)", matcher)
 	match := func(actual interface{}) *hamcrest.Result {
 		actualType := reflect.Typeof(actual)
 		result := matcher.Match(actualType)
-		why := hamcrest.NewDescription(
-			"reflect.Typeof() returned %v", actualType)
-		return hamcrest.NewResult(result.Matched(), why).WithCauses(result)
+		return hamcrest.NewResultf(result.Matched(),
+			"reflect.Typeof() returned %v", actualType).
+			WithCauses(result)
 	}
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "ToType(%v)", matcher)
 }
 
 // Returns a matcher that matches any object with the same
@@ -31,21 +30,18 @@ func SameTypeAs(example interface{}) *hamcrest.Matcher {
 }
 
 func _TypeMatcher(name string, expectedType reflect.Type) *hamcrest.Matcher {
-	whyMatched := hamcrest.NewDescription("was a %v", expectedType)
 	match := func(actual interface{}) *hamcrest.Result {
 		if actual == nil {
-			return hamcrest.NewResult(false, hamcrest.NewDescription("was nil"))
+			return hamcrest.NewResultf(false, "was nil")
 		}
 		actualType := reflect.Typeof(actual)
 		if reflect.DeepEqual(actualType, expectedType) {
-			return hamcrest.NewResult(true, whyMatched)
+			return hamcrest.NewResultf(true, "was of type %v", expectedType)
 		}
-		whyNotMatched := hamcrest.NewDescription(
+		return hamcrest.NewResultf(false,
 			"was a %v, not a %v", actualType, expectedType)
-		return hamcrest.NewResult(false, whyNotMatched)
 	}
-	description := hamcrest.NewDescription(name)
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "Typeof[%v]", expectedType)
 }
 
 var (
@@ -174,17 +170,16 @@ func ArrayTypeOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 	match := func(actual interface{}) *hamcrest.Result {
 		if arrayType, ok := actual.(*reflect.ArrayType); ok {
 			elementType := arrayType.Elem()
-			description := hamcrest.NewDescription(
-				"was ArrayType with elements of type %v", elementType.Name())
 			result := elementTypeMatcher.Match(elementType)
-			return hamcrest.NewResult(
-				result.Matched(), description).WithCauses(result)
+			return hamcrest.NewResultf(
+				result.Matched(),
+				"was ArrayType with elements of type %v", elementType.Name()).
+				WithCauses(result)
 		}
-		why := hamcrest.NewDescription("was of type %T, not an ArrayType", actual)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false,
+			"was of type %T, not an ArrayType", actual)
 	}
-	description := hamcrest.NewDescription("ArrayTypeOf(%v)", elementTypeMatcher)
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "ArrayTypeOf(%v)", elementTypeMatcher)
 }
 
 // Returns a new matcher that, on any input that is an array, extracts
@@ -197,17 +192,15 @@ func ArrayOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 		actualType := reflect.Typeof(actual)
 		if arrayType, ok := actualType.(*reflect.ArrayType); ok {
 			elementType := arrayType.Elem()
-			description := hamcrest.NewDescription(
-				"was array with elements of type %v", elementType)
 			result := elementTypeMatcher.Match(elementType)
-			return hamcrest.NewResult(
-				result.Matched(), description).WithCauses(result)
+			return hamcrest.NewResultf(
+				result.Matched(),
+				"was array with elements of type %v", elementType).
+				WithCauses(result)
 		}
-		why := hamcrest.NewDescription("was of type %T, not an array", actual)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false, "was of type %T, not an array", actual)
 	}
-	description := hamcrest.NewDescription("ArrayOf(%v)", elementTypeMatcher)
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "ArrayOf(%v)", elementTypeMatcher)
 }
 
 // Returns a new matcher that, on any input that is a *reflect.ChanType,
@@ -219,18 +212,16 @@ func ChannelTypeOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 	match := func(actual interface{}) *hamcrest.Result {
 		if channelType, ok := actual.(*reflect.ChanType); ok {
 			elementType := channelType.Elem()
-			description := hamcrest.NewDescription(
-				"was *reflect.ChanType with elements of type %v", elementType)
 			result := elementTypeMatcher.Match(elementType)
-			return hamcrest.NewResult(
-				result.Matched(), description).WithCauses(result)
+			return hamcrest.NewResultf(
+				result.Matched(),
+				"was *reflect.ChanType with elements of type %v", elementType).
+				WithCauses(result)
 		}
-		why := hamcrest.NewDescription(
+		return hamcrest.NewResultf(false,
 			"was of type %T, not a *reflect.ChanType", actual)
-		return hamcrest.NewResult(false, why)
 	}
-	description := hamcrest.NewDescription("ChannelTypeOf(%v)", elementTypeMatcher)
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "ChannelTypeOf(%v)", elementTypeMatcher)
 }
 
 // Returns a new matcher that, on any input that is a channel, extracts
@@ -243,17 +234,15 @@ func ChannelOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 		actualType := reflect.Typeof(actual)
 		if channelType, ok := actualType.(*reflect.ChanType); ok {
 			elementType := channelType.Elem()
-			description := hamcrest.NewDescription(
-				"was channel with elements of type %v", elementType)
 			result := elementTypeMatcher.Match(elementType)
-			return hamcrest.NewResult(
-				result.Matched(), description).WithCauses(result)
+			return hamcrest.NewResultf(result.Matched(),
+				"was channel with elements of type %v",
+				elementType).
+				WithCauses(result)
 		}
-		why := hamcrest.NewDescription("was of type %T, not a channel", actual)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false, "was of type %T, not a channel", actual)
 	}
-	description := hamcrest.NewDescription("ChannelOf(%v)", elementTypeMatcher)
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "ChannelOf(%v)", elementTypeMatcher)
 }
 
 // Returns a new matcher that, on any input that is a *reflect.SliceType,
@@ -265,17 +254,15 @@ func SliceTypeOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 	match := func(actual interface{}) *hamcrest.Result {
 		if sliceType, ok := actual.(*reflect.SliceType); ok {
 			elementType := sliceType.Elem()
-			description := hamcrest.NewDescription(
-				"was SliceType with elements of type %v", elementType.Name())
 			result := elementTypeMatcher.Match(elementType)
-			return hamcrest.NewResult(
-				result.Matched(), description).WithCauses(result)
+			return hamcrest.NewResultf(
+				result.Matched(),
+				"was SliceType with elements of type %v", elementType.Name()).
+				WithCauses(result)
 		}
-		why := hamcrest.NewDescription("was of type %T, not a slice", actual)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false, "was of type %T, not a slice", actual)
 	}
-	description := hamcrest.NewDescription("SliceTypeOf(%v)", elementTypeMatcher)
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "SliceTypeOf(%v)", elementTypeMatcher)
 }
 
 // Returns a new matcher that, on any input that is an array, extracts
@@ -288,17 +275,15 @@ func SliceOf(elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 		actualType := reflect.Typeof(actual)
 		if sliceType, ok := actualType.(*reflect.SliceType); ok {
 			elementType := sliceType.Elem()
-			description := hamcrest.NewDescription(
-				"was slice with elements of type %v", elementType)
 			result := elementTypeMatcher.Match(elementType)
-			return hamcrest.NewResult(
-				result.Matched(), description).WithCauses(result)
+			return hamcrest.NewResultf(
+				result.Matched(),
+				"was slice with elements of type %v", elementType).
+				WithCauses(result)
 		}
-		why := hamcrest.NewDescription("was of type %T, not a slice", actual)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false, "was of type %T, not a slice", actual)
 	}
-	description := hamcrest.NewDescription("SliceOf(%v)", elementTypeMatcher)
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "SliceOf(%v)", elementTypeMatcher)
 }
 
 // Returns a new matcher that, on any input that is a *reflect.MapType,
@@ -312,24 +297,22 @@ func MapTypeOf(keyTypeMatcher, elementTypeMatcher *hamcrest.Matcher) *hamcrest.M
 		if mapType, ok := actual.(*reflect.MapType); ok {
 			keyType := mapType.Key()
 			elementType := mapType.Elem()
-			description := hamcrest.NewDescription(
-				"was MapType with keys/elements of type %v/%v",
-				keyType, elementType)
 			keyResult := keyTypeMatcher.Match(keyType)
 			if !keyResult.Matched() {
-				return hamcrest.NewResult(false, description).
+				return hamcrest.NewResultf(false,
+					"was MapType with keys of type %v", keyType).
 					WithCauses(keyResult)
 			}
 			elementResult := elementTypeMatcher.Match(elementType)
-			return hamcrest.NewResult(elementResult.Matched(), description).
+			return hamcrest.NewResultf(elementResult.Matched(),
+				"was MapType with keys/elements of type %v/%v",
+				keyType, elementType).
 				WithCauses(keyResult, elementResult)
 		}
-		why := hamcrest.NewDescription("was of type %T, not a MapType", actual)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false, "was of type %T, not a MapType", actual)
 	}
-	description := hamcrest.NewDescription(
+	return hamcrest.NewMatcherf(match,
 		"MapTypeOf(%v, %v)", keyTypeMatcher, elementTypeMatcher)
-	return hamcrest.NewMatcher(description, match)
 }
 
 // Returns a new matcher that, on any input that is a map, extracts the
@@ -342,29 +325,7 @@ func MapTypeOf(keyTypeMatcher, elementTypeMatcher *hamcrest.Matcher) *hamcrest.M
 //    AllOf(MapWithKeyType(keyTypeMatcher), MapWithElementType(elementTypeMatcher))
 // but may be easier to read/type.
 func MapOf(keyTypeMatcher, elementTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
-	match := func(actual interface{}) *hamcrest.Result {
-		actualType := reflect.Typeof(actual)
-		if mapType, ok := actualType.(*reflect.MapType); ok {
-			keyType := mapType.Key()
-			elementType := mapType.Elem()
-			description := hamcrest.NewDescription(
-				"was map with keys/elements of type %v/%v",
-				keyType, elementType)
-			keyResult := keyTypeMatcher.Match(keyType)
-			if !keyResult.Matched() {
-				return hamcrest.NewResult(false, description).
-					WithCauses(keyResult)
-			}
-			elementResult := elementTypeMatcher.Match(elementType)
-			return hamcrest.NewResult(elementResult.Matched(), description).
-				WithCauses(keyResult, elementResult)
-		}
-		why := hamcrest.NewDescription("was of type %T, not a map", actual)
-		return hamcrest.NewResult(false, why)
-	}
-	description := hamcrest.NewDescription(
-		"MapOf(%v, %v)", keyTypeMatcher, elementTypeMatcher)
-	return hamcrest.NewMatcher(description, match)
+	return ToType(MapTypeOf(keyTypeMatcher, elementTypeMatcher))
 }
 
 
@@ -379,17 +340,17 @@ func PtrTypeTo(pointeeTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 	match := func(actual interface{}) *hamcrest.Result {
 		if ptrType, ok := actual.(*reflect.PtrType); ok {
 			elementType := ptrType.Elem()
-			description := hamcrest.NewDescription(
-				"was PtrType pointing to type %v", elementType.Name())
 			result := pointeeTypeMatcher.Match(elementType)
-			return hamcrest.NewResult(
-				result.Matched(), description).WithCauses(result)
+			return hamcrest.NewResultf(
+				result.Matched(),
+				"was PtrType pointing to type %v", elementType.Name()).
+				WithCauses(result)
 		}
-		why := hamcrest.NewDescription("was type %T, not a PtrType", actual)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false,
+			"was type %T, not a PtrType", actual)
 	}
-	description := hamcrest.NewDescription("PtrTypeTo(%v)", pointeeTypeMatcher)
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match,
+		"PtrTypeTo(%v)", pointeeTypeMatcher)
 }
 
 // Returns a new matcher that, on any input that is a pointer, extracts the
@@ -403,17 +364,16 @@ func PtrTo(pointeeTypeMatcher *hamcrest.Matcher) *hamcrest.Matcher {
 		actualType := reflect.Typeof(actual)
 		if ptrType, ok := actualType.(*reflect.PtrType); ok {
 			elementType := ptrType.Elem()
-			description := hamcrest.NewDescription(
-				"was PtrType to type %v", elementType)
 			result := pointeeTypeMatcher.Match(elementType)
-			return hamcrest.NewResult(
-				result.Matched(), description).WithCauses(result)
+			return hamcrest.NewResultf(
+				result.Matched(), "was PtrType to type %v", elementType).
+				WithCauses(result)
 		}
-		why := hamcrest.NewDescription("was type %T, not a pointer", actual)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false,
+			"was type %T, not a pointer", actual)
 	}
-	description := hamcrest.NewDescription("PtrTo(%v)", pointeeTypeMatcher)
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match,
+		"PtrTo(%v)", pointeeTypeMatcher)
 }
 
 

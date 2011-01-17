@@ -14,45 +14,42 @@ import (
 // Applies the given matcher to the result of writing the input object's
 // to a string by using fmt.Sprintf("%v", object).
 func ToString(matcher *hamcrest.Matcher) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("ToString(%v)", matcher)
 	match := func(actual interface{}) *hamcrest.Result {
-		var s string
-		var why *hamcrest.Description
 		if stringer, ok := actual.(fmt.Stringer); ok {
-			s = stringer.String()
-			why = hamcrest.NewDescription("String() returned %v", s)
-		} else {
-			s = fmt.Sprintf("%v", actual)
-			why = hamcrest.NewDescription("Not a fmt.Stringer, but prints as %v", s)
+			s := stringer.String()
+			result := matcher.Match(s)
+			return hamcrest.NewResultf(
+				result.Matched(), "String() returned %v", s).
+				WithCauses(result)
 		}
+		s :=  fmt.Sprintf("%v", actual)
 		result := matcher.Match(s)
-		return hamcrest.NewResult(result.Matched(), why).WithCauses(result)
+		return hamcrest.NewResultf(result.Matched(),
+			"Not a fmt.Stringer, but prints as %v", s).
+			WithCauses(result)
 	}
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "ToString(%v)", matcher)
 }
 
 
 // Applies the given matcher to the result of writing the input object's
 // to a string by using fmt.Sprintf("%#v", object).
 func ToGoString(matcher *hamcrest.Matcher) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("ToGoString(%v)", matcher)
 	match := func(actual interface{}) *hamcrest.Result {
-		var s string
-		var why *hamcrest.Description
 		if gostringer, ok := actual.(fmt.GoStringer); ok {
-			s = gostringer.GoString()
-			why = hamcrest.NewDescription("GoString() returned %v", s)
-		} else {
-			s = fmt.Sprintf("%#v", actual)
-			why = hamcrest.NewDescription("Not a fmt.GoStringer, but prints as %v", s)
+			s := gostringer.GoString()
+			result := matcher.Match(s)
+			return hamcrest.NewResultf(result.Matched(),
+				"GoString() returned %v", s).
+				WithCauses(result)
 		}
+		s := fmt.Sprintf("%#v", actual)
 		result := matcher.Match(s)
-		if result.Matched() {
-			return hamcrest.NewResult(true, why).WithCauses(result)
-		}
-		return hamcrest.NewResult(false, why).WithCauses(result)
+		return hamcrest.NewResultf(result.Matched(),
+			"Not a fmt.GoStringer, but prints as %v", s).
+			WithCauses(result)
 	}
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "ToGoString(%v)", matcher)
 }
 
 
@@ -61,43 +58,36 @@ func ToGoString(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 // signature from the match function required by hamcrest.NewMatcher.
 //
 // If the input value is not a string, the matcher will fail to match.
-func NewStringMatcher(description *hamcrest.Description, matchString func(s string) *hamcrest.Result) *hamcrest.Matcher {
-	match := func (v interface{}) *hamcrest.Result {
+func NewStringMatcher(match func(s string) *hamcrest.Result, description hamcrest.SelfDescribing) *hamcrest.Matcher {
+	return hamcrest.NewMatcher(func (v interface{}) *hamcrest.Result {
 		if s, ok := v.(string); ok {
-			return matchString(s)
+			return match(s)
 		}
-		why := hamcrest.NewDescription("%v is a %T, not a string", v, v)
-		return hamcrest.NewResult(false, why)
-	}
-	return hamcrest.NewMatcher(description, match)
+		return hamcrest.NewResultf(false, "was a %T, not a string", v)
+	}, description)
 }
 
-
-func EqualTo(expected string) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("EqualTo(\"%v\")", expected)
-	match := func (s string) *hamcrest.Result {
-		if s == expected {
-			why := hamcrest.NewDescription("was \"%v\"", s)
-			return hamcrest.NewResult(true, why)
-		}
-		why := hamcrest.NewDescription("was \"%v\", not \"%v\"", s, expected)
-		return hamcrest.NewResult(false, why)
-	}
-	return NewStringMatcher(description, match)
+// Creates a new matcher (as hamcrest.NewMatcher), that only matches
+// strings.  Note that its match function has an (appropriately) different
+// signature from the match function required by hamcrest.NewMatcher.
+//
+// If the input value is not a string, the matcher will fail to match.
+func NewStringMatcherf(match func(s string) *hamcrest.Result, format string, args...interface{}) *hamcrest.Matcher {
+	return NewStringMatcher(match, hamcrest.Description(format, args...))
 }
 
 // Creates a new matcher that applies the given matcher to the result of
 // converting an input string to lowercase (using strings.ToLower).
 // If the input value is not a string, the matcher fails to match.
 func ToLower(matcher *hamcrest.Matcher) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("ToLower(%v)", matcher)
 	match := func(s string) *hamcrest.Result {
 		lower := strings.ToLower(s)
-		why := hamcrest.NewDescription("to lower is %v", lower)
 		result := matcher.Match(lower)
-		return hamcrest.NewResult(result.Matched(), why).WithCauses(result)
+		return hamcrest.NewResultf(result.Matched(),
+			"ToLower is %v", lower).
+			WithCauses(result)
 	}
-	return NewStringMatcher(description, match)
+	return NewStringMatcherf(match, "ToLower(%v)", matcher)
 }
 
 
@@ -105,31 +95,30 @@ func ToLower(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 // converting an input string to uppercase (using strings.ToUpper).
 // If the input value is not a string, the matcher fails to match.
 func ToUpper(matcher *hamcrest.Matcher) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("ToUpper(%v)", matcher)
 	match := func(s string) *hamcrest.Result {
 		upper := strings.ToUpper(s)
-		why := hamcrest.NewDescription("to upper is %v", upper)
 		result := matcher.Match(upper)
-		return hamcrest.NewResult(result.Matched(), why).WithCauses(result)
+		return hamcrest.NewResultf(result.Matched(),
+			"ToUpper is %v", upper).
+			WithCauses(result)
 	}
-	return NewStringMatcher(description, match)
+	return NewStringMatcherf(match, "ToUpper(%v)", matcher)
 }
 
 func EqualToIgnoringCase(expected string) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("EqualToIgnoringCase(\"%v\")", expected)
 	expectedToLower := strings.ToLower(expected)
 	match := func(actual string) *hamcrest.Result {
 		actualToLower := strings.ToLower(actual)
 		if actualToLower == expectedToLower {
-			why := hamcrest.NewDescription("\"%v\" matches \"%v\" (ignoring case)",
+			return hamcrest.NewResultf(true,
+				"\"%v\" matches \"%v\" (ignoring case)",
 				actual, expected)
-			return hamcrest.NewResult(true, why)
 		}
-		why := hamcrest.NewDescription("\"%v\" differs from \"%v\" (ignoring case)",
+		return hamcrest.NewResultf(false,
+			"\"%v\" differs from \"%v\" (ignoring case)",
 			actual, expected)
-		return hamcrest.NewResult(false, why)
 	}
-	return NewStringMatcher(description, match)
+	return NewStringMatcherf(match, "EqualToIgnoringCase(\"%v\")", expected)
 }
 
 
@@ -138,20 +127,19 @@ func EqualToIgnoringCase(expected string) *hamcrest.Matcher {
 // converting an input string its length. (using the `len()` builtin).
 // If the input value is not a string, the matcher fails to match.
 func ToLen(matcher *hamcrest.Matcher) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("ToLen(%v)", matcher)
 	match := func(s string) *hamcrest.Result {
 		length := len(s)
-		why := hamcrest.NewDescription("length is %v", length)
 		result := matcher.Match(length)
-		return hamcrest.NewResult(result.Matched(), why).WithCauses(result)
+		return hamcrest.NewResultf(result.Matched(),
+			"length is %v", length).
+			WithCauses(result)
 	}
-	return NewStringMatcher(description, match)
+	return NewStringMatcherf(match, "ToLen(%v)", matcher)
 }
 
 
 // Matches strings that begin with the given prefix.
 func HasPrefix(prefix string) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("HasPrefix(\"%v\")", prefix)
 	maxLength := len(prefix) + 8 // arbitrary extra amount
 	match := func (s string) *hamcrest.Result {
 		continued := ""
@@ -159,20 +147,17 @@ func HasPrefix(prefix string) *hamcrest.Matcher {
 			s, continued = s[:maxLength], "..."
 		}
 		if strings.HasPrefix(s, prefix) {
-			why := hamcrest.NewDescription(
+			return hamcrest.NewResultf(true, 
 				"\"%v%v\" starts with \"%v\"", s, continued, prefix)
-			return hamcrest.NewResult(true, why)
 		}
-		why := hamcrest.NewDescription(
+		return hamcrest.NewResultf(false,
 			"\"%v%v\" does not start with \"%v\"", s, continued, prefix)
-		return hamcrest.NewResult(false, why)
 	}
-	return NewStringMatcher(description, match)
+	return NewStringMatcherf(match, "HasPrefix(\"%v\")", prefix)
 }
 
 // Matches strings that end with the given prefix.
 func HasSuffix(suffix string) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("HasSuffix(\"%v\")", suffix)
 	maxLength := len(suffix) + 8 // arbitrary extra amount
 	match := func (s string) *hamcrest.Result {
 		continued := ""
@@ -180,21 +165,18 @@ func HasSuffix(suffix string) *hamcrest.Matcher {
 			continued, s = "...", s[len(s) - maxLength:]
 		}
 		if strings.HasSuffix(s, suffix) {
-			why := hamcrest.NewDescription(
+			return hamcrest.NewResultf(true,
 				"\"%v%v\" ends with \"%v\"", s, continued, suffix)
-			return hamcrest.NewResult(true, why)
 		}
-		why := hamcrest.NewDescription(
-				"\"%v%v\" does not end with \"%v\"", s, continued, suffix)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false,
+			"\"%v%v\" does not end with \"%v\"", s, continued, suffix)
 	}
-	return NewStringMatcher(description, match)
+	return NewStringMatcherf(match, "HasSuffix(\"%v\")", suffix)
 }
 
 
 // Matches strings that contain the given substring.
 func Contains(substring string) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("Contains(\"%v\")", substring)
 	match := func (s string) *hamcrest.Result {
 		extra := 8
 		if found := strings.Index(s, substring); found >= 0 {
@@ -210,35 +192,32 @@ func Contains(substring string) *hamcrest.Matcher {
 			} else {
 				suffix = "..."
 			}
-			why := hamcrest.NewDescription("substring \"%v\" appears in \"%v%v%v\"",
+			return hamcrest.NewResultf(true,
+				"substring \"%v\" appears in \"%v%v%v\"",
 				substring, prefix, s[start:end], suffix)
-			return hamcrest.NewResult(true, why)
 		}
-		why := hamcrest.NewDescription(
-			"substring \"%v\" does not appear in \"%v\"", substring, s)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false,
+			"substring \"%v\" does not appear in \"%v\"",
+			substring, s)
 	}
-	return NewStringMatcher(description, match)
+	return NewStringMatcherf(match, "Contains(\"%v\")", substring)
 }
 
 // Matches strings that contain the given regexp pattern, using
 // the same syntax as the standard regexp package.
 func HasPattern(pattern string) *hamcrest.Matcher {
 	re := regexp.MustCompile(pattern)
-	description := hamcrest.NewDescription("HasPattern[\"%v\"]", pattern)
 	match := func (s string) *hamcrest.Result {
 		if found := re.FindStringIndex(s); found != nil {
 			start, end := found[0], found[1]
-			why := hamcrest.NewDescription(
+			return hamcrest.NewResultf(true,
 				"pattern \"%v\" matched substring[%v:%v]=\"%v\"",
-					pattern, start, end, s[start:end])
-			return hamcrest.NewResult(true, why)
+				pattern, start, end, s[start:end])
 		}
-		why := hamcrest.NewDescription(
+		return hamcrest.NewResultf(false,
 			"pattern \"%v\" not found in \"%v\"", pattern, s)
-		return hamcrest.NewResult(false, why)
 	}
-	return NewStringMatcher(description, match)
+	return NewStringMatcherf(match, "HasPattern[\"%v\"]", pattern)
 }
 
 type ExtractPatternClause struct {
@@ -259,27 +238,26 @@ func ExtractPattern(pattern string) *ExtractPatternClause {
 //    "deceiver seizure"
 func (self *ExtractPatternClause) Each(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 	re := self.re
-	description := hamcrest.NewDescription("Each[\"%v\"][%v]", re, matcher)
 	match := func (s string) *hamcrest.Result {
 		matches := re.FindAllStringIndex(s, -1)
 		if matches == nil {
-			why := hamcrest.NewDescription("No occurrences of pattern")
-			return hamcrest.NewResult(true, why)
+			return hamcrest.NewResultf(true,
+				"No occurrences of pattern \"%v\"", re)
 		}
 		for _, loc := range matches {
 			start, end := loc[0], loc[1]
 			substring := s[start:end]
 			result := matcher.Match(substring)
 			if !result.Matched() {
-				why := hamcrest.NewDescription("did not match substring[%v:%v]=%v",
-					start, end, substring)
-				return hamcrest.NewResult(false, why)
+				return hamcrest.NewResultf(false,
+					"did not match substring[%v:%v]=\"%v\" for pattern \"%v\"",
+					start, end, substring, re)
 			}
 		}
-		why := hamcrest.NewDescription("Matched all occurrences of pattern")
-		return hamcrest.NewResult(true, why)
+		return hamcrest.NewResultf(true,
+			"Matched all occurrences of pattern \"%v\"", re)
 	}
-	return NewStringMatcher(description, match)
+	return NewStringMatcherf(match, "Each[\"%v\"][%v]", re, matcher)
 }
 
 // Completes a matcher that finds every occurrence of a pattern in the
@@ -292,12 +270,10 @@ func (self *ExtractPatternClause) Each(matcher *hamcrest.Matcher) *hamcrest.Matc
 //    "Matt spat at a rat"
 func (self *ExtractPatternClause) Any(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 	re := self.re
-	description := hamcrest.NewDescription("Any[\"%v\"][%v]", re, matcher)
 	match := func (s string) *hamcrest.Result {
 		matches := re.FindAllStringIndex(s, -1)
 		if matches == nil {
-			why := hamcrest.NewDescription("No occurrences of pattern")
-			return hamcrest.NewResult(false, why)
+			return hamcrest.NewResultf(false, "No occurrences of pattern \"%v\"", re)
 		}
 		occurrences := 0
 		for _, loc := range matches {
@@ -306,15 +282,15 @@ func (self *ExtractPatternClause) Any(matcher *hamcrest.Matcher) *hamcrest.Match
 			substring := s[start:end]
 			result := matcher.Match(substring)
 			if result.Matched() {
-				why := hamcrest.NewDescription("matched substring[%v:%v]=%v",
-					start, end, substring)
-				return hamcrest.NewResult(true, why)
+				return hamcrest.NewResultf(true,
+					"matched substring[%v:%v]=\"%v\" on pattern \"%v\"",
+					start, end, substring, re)
 			}
 		}
-		why := hamcrest.NewDescription(
-			"Matched none of the %v occurrences of pattern", occurrences)
-		return hamcrest.NewResult(false, why)
+		return hamcrest.NewResultf(false,
+			"Matched none of the %v occurrences of pattern \"%v\"",
+			occurrences, re)
 	}
-	return NewStringMatcher(description, match)
+	return NewStringMatcherf(match, "Any[\"%v\"][%v]", re, matcher)
 }
 

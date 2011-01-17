@@ -8,10 +8,6 @@ import (
 	"hamcrest"
 )
 
-var NewDescription = hamcrest.NewDescription
-var NewMatcher = hamcrest.NewMatcher
-var NewResult = hamcrest.NewResult
-
 // First part of a builder for a short-circuiting both/and matcher:
 //     matcher := Both(Matcher1).And(Matcher2)
 func Both(matcher *hamcrest.Matcher) *BothClause {
@@ -26,22 +22,24 @@ type BothClause struct {
 // Second part of a builder for a short-circuiting both/and matcher.
 func (self *BothClause) And(matcher2 *hamcrest.Matcher) *hamcrest.Matcher {
 	matcher1 := self.matcher
-	description := hamcrest.NewDescription("both [%v] and [%v]", matcher1, matcher2)
 	match := func(actual interface{}) *hamcrest.Result {
 		result1 := matcher1.Match(actual)
 		if !result1.Matched() {
-			because := NewDescription("first part of 'Both/And' did not match [%v]", actual)
-			return NewResult(false, because).WithCauses(result1)
+			return hamcrest.NewResultf(false,
+				"first part of 'Both/And' did not match [%v]", actual).
+				WithCauses(result1)
 		}
 		result2 := matcher2.Match(actual)
 		if !result2.Matched() {
-			because := NewDescription("second part of 'Both/And' did not match [%v]", actual)
-			return NewResult(false, because).WithCauses(result2)
+			return hamcrest.NewResultf(false,
+				"second part of 'Both/And' did not match [%v]", actual).
+				WithCauses(result2)
 		}
-		because := NewDescription("both parts of 'Both/And' matched [%v]", actual)
-		return NewResult(true, because).WithCauses(result1, result2)
+		return hamcrest.NewResultf(true,
+			"both parts of 'Both/And' matched [%v]", actual).
+			WithCauses(result1, result2)
 	}
-	return NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "both [%v] and [%v]", matcher1, matcher2)
 }
 
 
@@ -67,22 +65,27 @@ type EitherClause struct {
 // of the two component matches successfully matches.
 func (self *EitherClause) Or(matcher2 *hamcrest.Matcher) *hamcrest.Matcher {
 	matcher1 := self.matcher
-	description := NewDescription("either [%v] or [%v]", matcher1, matcher2)
 	match := func(actual interface{}) *hamcrest.Result {
 		result1 := matcher1.Match(actual)
 		if result1.Matched() {
-			because := NewDescription("first part of 'Either/Or' matched [%v]", actual)
-			return NewResult(true, because).WithCauses(result1)
+			return hamcrest.NewResultf(true,
+				"first part of 'Either/Or' matched [%v]",
+				actual).
+				WithCauses(result1)
 		}
 		result2 := matcher2.Match(actual)
 		if result2.Matched() {
-			because := NewDescription("second part of 'Either/Or' matched [%v]", actual)
-			return NewResult(true, because).WithCauses(result2)
+			return hamcrest.NewResultf(true,
+				"second part of 'Either/Or' matched [%v]",
+				actual).
+				WithCauses(result2)
 		}
-		because := NewDescription("neither part of 'Either/Or' matched [%v]", actual)
-		return NewResult(false, because).WithCauses(result1, result2)
+		return hamcrest.NewResultf(false,
+			"neither part of 'Either/Or' matched [%v]", actual).
+			WithCauses(result1, result2)
 	}
-	return NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match,
+		"either [%v] or [%v]", matcher1, matcher2)
 }
 
 // Second part of a builder for an either/xor matcher:
@@ -93,26 +96,29 @@ func (self *EitherClause) Or(matcher2 *hamcrest.Matcher) *hamcrest.Matcher {
 // operation.
 func (self *EitherClause) Xor(matcher2 *hamcrest.Matcher) *hamcrest.Matcher {
 	matcher1 := self.matcher
-	description := NewDescription("either [%v] xor [%v]", matcher1, matcher2)
 	match := func(actual interface{}) *hamcrest.Result {
 		result1 := matcher1.Match(actual)
 		result2 := matcher2.Match(actual)
 		if result1.Matched() {
 			if result2.Matched() {
-				because := NewDescription("both parts of 'Either/Xor' matched [%v]", actual)
-				return NewResult(false, because).WithCauses(result1, result2)
+				return hamcrest.NewResultf(false,
+					"both parts of 'Either/Xor' matched [%v]", actual).
+					WithCauses(result1, result2)
 			}
-			because := NewDescription("only the first part of 'Either/Xor' matched [%v]", actual)
-			return NewResult(true, because).WithCauses(result1, result2)
+			return hamcrest.NewResultf(true,
+				"only the first part of 'Either/Xor' matched [%v]", actual).
+				WithCauses(result1, result2)
 		}
 		if result2.Matched() {
-			because := NewDescription("only the second part of 'Either/Xor' matched [%v]", actual)
-			return NewResult(true, because).WithCauses(result1, result2)
+			return hamcrest.NewResultf(true,
+				"only the second part of 'Either/Xor' matched [%v]", actual).
+				WithCauses(result1, result2)
 		}
-		because := NewDescription("neither part of 'Either/Xor' matched [%v]", actual)
-		return NewResult(false, because).WithCauses(result1, result2)
+		return hamcrest.NewResultf(false,
+			"neither part of 'Either/Xor' matched [%v]", actual).
+			WithCauses(result1, result2)
 	}
-	return NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "either [%v] xor [%v]", matcher1, matcher2)
 }
 
 // First part of a builder for a short-circuiting neither/nor matcher:
@@ -139,22 +145,24 @@ type NeitherClause struct {
 // But may be more readable in practice.
 func (self *NeitherClause) Nor(matcher2 *hamcrest.Matcher) *hamcrest.Matcher {
 	matcher1 := self.matcher
-	description := NewDescription("neither [%v] nor [%v]", matcher1, matcher2)
 	match := func(actual interface{}) *hamcrest.Result {
 		result1 := matcher1.Match(actual)
 		if result1.Matched() {
-			because := NewDescription("first part of 'Nor' matched [%v]", actual)
-			return NewResult(false, because).WithCauses(result1)
+			return hamcrest.NewResultf(false,
+			"first part of 'Nor' matched [%v]", actual).
+			WithCauses(result1)
 		}
 		result2 := matcher2.Match(actual)
 		if result2.Matched() {
-			because := NewDescription("second part of 'Nor' matched [%v]", actual)
-			return NewResult(false, because).WithCauses(result2)
+			return hamcrest.NewResultf(false,
+				"second part of 'Nor' matched [%v]", actual).
+				WithCauses(result2)
 		}
-		because := NewDescription("neither part of 'Nor' matched [%v]", actual)
-		return NewResult(true, because).WithCauses(result1, result2)
+		return hamcrest.NewResultf(true,
+			"neither part of 'Nor' matched [%v]", actual).
+			WithCauses(result1, result2)
 	}
-	return NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "neither [%v] nor [%v]", matcher1, matcher2)
 }
 
 
@@ -187,22 +195,25 @@ type IfClause struct {
 // But may be more readable in practice.
 func (self *IfClause) Then(consequent *hamcrest.Matcher) *hamcrest.Matcher {
 	antecedent := self.antecedent
-	description := NewDescription("if [%v] then [%v]", antecedent, consequent)
 	match := func(actual interface{}) *hamcrest.Result {
 		result1 := antecedent.Match(actual)
 		if !result1.Matched() {
-			because := NewDescription("'If/Then' matched because antecedent failed on [%v]", actual)
-			return NewResult(true, because).WithCauses(result1)
+			return hamcrest.NewResultf(true,
+				"'If/Then' matched because antecedent failed on [%v]", actual).
+				WithCauses(result1)
 		}
 		result2 := consequent.Match(actual)
 		if result2.Matched() {
-			because := NewDescription("'If/Then' matched because consequent matched on [%v]", actual)
-			return NewResult(true, because).WithCauses(result2)
+			return hamcrest.NewResultf(true,
+				"'If/Then' matched because consequent matched on [%v]", actual).
+				WithCauses(result2)
 		}
-		because := NewDescription("'If/Then' failed on [%v]", actual)
-		return NewResult(false, because).WithCauses(result1, result2)
+		return hamcrest.NewResultf(false,
+			"'If/Then' failed on [%v]", actual).
+			WithCauses(result1, result2)
 	}
-	return NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match,
+		"if [%v] then [%v]", antecedent, consequent)
 }
 
 
@@ -229,25 +240,28 @@ type IfAndOnlyIfClause struct {
 // But may be more readable in practice.
 func (self *IfAndOnlyIfClause) Then(consequent *hamcrest.Matcher) *hamcrest.Matcher {
 	antecedent := self.antecedent
-	description := NewDescription("if and only if [%v] then [%v]", antecedent, consequent)
 	match := func(actual interface{}) *hamcrest.Result {
 		result1 := antecedent.Match(actual)
 		result2 := consequent.Match(actual)
 		if result1.Matched() {
 			if result2.Matched() {
-				because := NewDescription("Matched because both parts of 'Iff/Then' matched on [%v]", actual)
-				return NewResult(true, because).WithCauses(result1, result2)
+				return hamcrest.NewResultf(true,
+					"Matched because both parts of 'Iff/Then' matched on [%v]", actual).
+					WithCauses(result1, result2)
 			}
-			because := NewDescription("Failed because only the first part of 'Iff/Then' matched on [%v]", actual)
-			return NewResult(false, because).WithCauses(result1, result2)
+			return hamcrest.NewResultf(false,
+				"Failed because only the first part of 'Iff/Then' matched on [%v]", actual).
+				WithCauses(result1, result2)
 		}
 		if result2.Matched() {
-			because := NewDescription("Failed because only the second part of 'IFf/Then' matched on [%v]", actual)
-			return NewResult(false, because).WithCauses(result1, result2)
+			return hamcrest.NewResultf(false,
+				"Failed because only the second part of 'IFf/Then' matched on [%v]", actual).
+				WithCauses(result1, result2)
 		}
-		because := NewDescription("Matched because neither part of 'Iff/Then' matched on [%v]", actual)
-		return NewResult(true, because).WithCauses(result1, result2)
+		return hamcrest.NewResultf(true,
+			"Matched because neither part of 'Iff/Then' matched on [%v]", actual).
+			WithCauses(result1, result2)
 	}
-	return NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "if and only if [%v] then [%v]", antecedent, consequent)
 }
 

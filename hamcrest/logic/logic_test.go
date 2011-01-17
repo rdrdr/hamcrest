@@ -89,11 +89,10 @@ func logSamples(t *testing.T, matcher *hamcrest.Matcher) {
 func Test_BothAnd(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := NewMatcher(NewDescription("snoop"), 
-		func(v interface{}) *hamcrest.Result {
+	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
 			calledSnoop = true
-			return NewResult(false, NewDescription("snooped!"))
-		})
+			return hamcrest.NewResultf(false, "snooped!")
+		}, "Snoop")
 	
 	if result := Both(yes).And(yes).Match(0); !result.Matched() {
 		t.Errorf("yes and yes should match, was [%v]", result)
@@ -117,11 +116,10 @@ func Test_BothAnd(t *testing.T) {
 func Test_EitherOr(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := NewMatcher(NewDescription("snoop"), 
-		func(v interface{}) *hamcrest.Result {
+	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
 			calledSnoop = true
-			return NewResult(false, NewDescription("snooped!"))
-		})
+			return hamcrest.NewResultf(false, "snooped!")
+		}, "Snoop")
 	
 	if result := Either(no).Or(no).Match(0); result.Matched() {
 		t.Errorf("no or no should not match, was [%v]", result)
@@ -165,11 +163,10 @@ func Test_EitherXor(t *testing.T) {
 func Test_NeitherNor(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := NewMatcher(NewDescription("snoop"), 
-		func(v interface{}) *hamcrest.Result {
+	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
 			calledSnoop = true
-			return NewResult(false, NewDescription("snooped!"))
-		})
+			return hamcrest.NewResultf(false, "snooped!")
+		}, "Snoop")
 	
 	if result := Neither(no).Nor(no).Match(0); !result.Matched() {
 		t.Errorf("no nor no should match, was [%v]", result)
@@ -193,11 +190,10 @@ func Test_NeitherNor(t *testing.T) {
 func Test_IfThen(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := NewMatcher(NewDescription("snoop"), 
-		func(v interface{}) *hamcrest.Result {
+	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
 			calledSnoop = true
-			return NewResult(false, NewDescription("snooped!"))
-		})
+			return hamcrest.NewResultf(false, "snooped!")
+		}, "Snoop")
 	
 	if result := If(yes).Then(yes).Match(0); !result.Matched() {
 		t.Errorf("if yes then yes should match, was [%v]", result)

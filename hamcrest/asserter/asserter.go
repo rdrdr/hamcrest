@@ -197,8 +197,7 @@ func (self *_Asserter) Failed() bool {
 func safeMatch(value interface{}, matcher *hamcrest.Matcher) (result *hamcrest.Result) {
 	defer func() {
 		if x := recover(); x != nil {
-			result = hamcrest.NewResult(false,
-				hamcrest.NewDescription("Panic: %v", x))
+			result = hamcrest.NewResultf(false, "Panic: %v", x)
 		}
 	}()
 	result = matcher.Match(value)

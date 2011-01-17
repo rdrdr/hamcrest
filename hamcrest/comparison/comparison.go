@@ -21,22 +21,22 @@ const (
 	_INCOMPARABLE_TYPES
 )
 
-func (c _Comparison) _Describe(x, y interface{}) *hamcrest.Description {
+func (c _Comparison) _Describe(x, y interface{}) hamcrest.SelfDescribing {
 	switch c {
 	case _LESS_THAN:
-		return hamcrest.NewDescription("%v was less than %v", x, y)
+		return hamcrest.Description("%v was less than %v", x, y)
 	case _ORDERED_EQUAL_TO:
-		return hamcrest.NewDescription("%v was equal to %v", x, y)
+		return hamcrest.Description("%v was equal to %v", x, y)
 	case _GREATER_THAN:
-		return hamcrest.NewDescription("%v was greater than %v", x, y)
+		return hamcrest.Description("%v was greater than %v", x, y)
 	case _UNORDERED_EQUAL_TO:
-		return hamcrest.NewDescription("%v was (unordered) equal to %v", x, y)
+		return hamcrest.Description("%v was (unordered) equal to %v", x, y)
 	case _UNORDERED_NOT_EQUAL_TO:
-		return hamcrest.NewDescription("%v was (unordered) not equal to %v", x, y)
+		return hamcrest.Description("%v was (unordered) not equal to %v", x, y)
 	case _INCOMPARABLE_TYPES:
-		return hamcrest.NewDescription("types %T and %T cannot be compared", x, y)
+		return hamcrest.Description("types %T and %T cannot be compared", x, y)
 	}
-	return hamcrest.NewDescription("Unrecognized %v on %v and %v",int8(c), x, y)
+	return hamcrest.Description("Unrecognized %v on %v and %v",int8(c), x, y)
 }
 
 // All the messiness of determining whether or not two objects
@@ -186,7 +186,6 @@ func _Compare(x interface{}, y interface{}) _Comparison {
 // Returns a matcher that matches values that are greater-than the given
 // expected value, using the greater-than (<) operator.
 func GreaterThan(expected interface{}) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("GreaterThan(%v)", expected)
 	match := func(actual interface{}) *hamcrest.Result {
 		c := _Compare(actual, expected)
 		switch c {
@@ -197,13 +196,12 @@ func GreaterThan(expected interface{}) *hamcrest.Matcher {
 		}
 		panic("every case should have a return")
 	}
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "GreaterThan(%v)", expected)
 }
 
 // Returns a matcher that matches values that are greater-than-or-equal-to
 // the given expected value, using the greater-than-or-equal-to (>=) operator.
 func GreaterThanOrEqualTo(expected interface{}) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("GreaterThanOrEqualTo(%v)", expected)
 	match := func(actual interface{}) *hamcrest.Result {
 		c := _Compare(actual, expected)
 		switch c {
@@ -214,13 +212,12 @@ func GreaterThanOrEqualTo(expected interface{}) *hamcrest.Matcher {
 		}
 		panic("every case should have a return")
 	}
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "GreaterThanOrEqualTo(%v)", expected)
 }
 
 // Returns a matcher that matches values that are less-than the given
 // expected value, using the less-than (<) operator.
 func LessThan(expected interface{}) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("LessThan(%v)", expected)
 	match := func(actual interface{}) *hamcrest.Result {
 		c := _Compare(actual, expected)
 		switch c {
@@ -231,13 +228,12 @@ func LessThan(expected interface{}) *hamcrest.Matcher {
 		}
 		panic("every case should have a return")
 	}
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "LessThan(%v)", expected)
 }
 
 // Returns a matcher that matches values that are less-than-or-equal-to
 // the given expected value, using the less-than-or-equal-to (<=) operator.
 func LessThanOrEqualTo(expected interface{}) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("LessThanOrEqualTo(%v)", expected)
 	match := func(actual interface{}) *hamcrest.Result {
 		c := _Compare(actual, expected)
 		switch c {
@@ -248,13 +244,12 @@ func LessThanOrEqualTo(expected interface{}) *hamcrest.Matcher {
 		}
 		panic("every case should have a return")
 	}
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "LessThanOrEqualTo(%v)", expected)
 }
 
 // Returns a matcher that matches values that are equal to the
 // given expected value, using the equality (==) operator.
 func EqualTo(expected interface{}) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("EqualTo(%v)", expected)
 	match := func(actual interface{}) *hamcrest.Result {
 		c := _Compare(actual, expected)
 		switch c {
@@ -265,13 +260,12 @@ func EqualTo(expected interface{}) *hamcrest.Matcher {
 		}
 		panic("every case should have a return")
 	}
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "EqualTo(%v)", expected)
 }
 
 // Returns a matcher that matches values that are not equal to the
 // given expected value, using the inequality (!=) operator.
 func NotEqualTo(expected interface{}) *hamcrest.Matcher {
-	description := hamcrest.NewDescription("NotEqualTo(%v)", expected)
 	match := func(actual interface{}) *hamcrest.Result {
 		c := _Compare(actual, expected)
 		switch c {
@@ -282,6 +276,6 @@ func NotEqualTo(expected interface{}) *hamcrest.Matcher {
 		}
 		panic("every case should have a return")
 	}
-	return hamcrest.NewMatcher(description, match)
+	return hamcrest.NewMatcherf(match, "NotEqualTo(%v)", expected)
 }
 

@@ -14,11 +14,10 @@ func Anything() *Matcher {
 }
 var _Anything *Matcher // singleton
 func init() {
-	description := NewDescription("always matches")
 	match := func (actual interface{}) *Result {
-		return NewResult(true, description)
+		return NewResultf(true, "always matches")
 	}
-	_Anything = NewMatcher(NewDescription("matches anything"), match)
+	_Anything = NewMatcherf(match, "Anything")
 }
 
 
@@ -28,18 +27,16 @@ func True() *Matcher {
 }
 var _True *Matcher // singleton
 func init() {
-	trueDescription := NewDescription("was true")
-	falseDescription := NewDescription("was not true")
 	match := func (actual interface{}) *Result {
 		if b, ok := actual.(bool); ok {
 			if b {
-				return NewResult(true, trueDescription)
+				return NewResultf(true, "was true")
 			}
-			return NewResult(false, falseDescription)
+			return NewResultf(false, "was not true")
 		}
-		return NewResult(false, NewDescription("[%v] was not bool", actual))
+		return NewResultf(false, "[%v] was not bool", actual)
 	}
-	_True = NewMatcher(NewDescription("matches true"), match)
+	_True = NewMatcherf(match, "True")
 }
 
 // Returns a Matcher that matches the boolean value false.
@@ -48,18 +45,16 @@ func False() *Matcher {
 }
 var _False *Matcher // singleton
 func init() {
-	trueDescription := NewDescription("was not false")
-	falseDescription := NewDescription("was false")
 	match := func (actual interface{}) *Result {
 		if b, ok := actual.(bool); ok {
-			if b {
-				return NewResult(false, trueDescription)
+			if !b {
+				return NewResultf(true, "was false")
 			}
-			return NewResult(true, falseDescription)
+			return NewResultf(false, "was not false")
 		}
-		return NewResult(false, NewDescription("[%v] was not bool", actual))
+		return NewResultf(false, "[%v] was not bool", actual)
 	}
-	_False = NewMatcher(NewDescription("matches false"), match)
+	_False = NewMatcherf(match, "False")
 }
 
 
@@ -69,14 +64,13 @@ func Matched() *Matcher {
 }
 var _Matched *Matcher // singleton
 func init() {
-	description := NewDescription("was a result")
 	match := func (actual interface{}) *Result {
 		if result, ok := actual.(*Result); ok {
-			return NewResult(result.Matched(), description).WithCauses(result)
+			return NewResultf(result.Matched(), "was a result").WithCauses(result)
 		}
-		return NewResult(false, NewDescription("[%v] was not a result", actual))
+		return NewResultf(false, "[%v] was not a result", actual)
 	}
-	_Matched = NewMatcher(NewDescription("Matched"), match)
+	_Matched = NewMatcherf(match, "Matched")
 }
 
 // Returns a Matcher that matches the boolean value false.
@@ -85,14 +79,13 @@ func DidNotMatch() *Matcher {
 }
 var _DidNotMatch *Matcher // singleton
 func init() {
-	description := NewDescription("was a result")
 	match := func (actual interface{}) *Result {
 		if result, ok := actual.(*Result); ok {
-			return NewResult(!result.Matched(), description).WithCauses(result)
+			return NewResultf(!result.Matched(), "was a result").WithCauses(result)
 		}
-		return NewResult(false, NewDescription("[%v] was not a result", actual))
+		return NewResultf(false, "[%v] was not a result", actual)
 	}
-	_DidNotMatch = NewMatcher(NewDescription("DidNotMatch"), match)
+	_DidNotMatch = NewMatcherf(match, "DidNotMatch")
 }
 
 
@@ -103,17 +96,16 @@ func Not(matcher *Matcher) *Matcher {
 		result := matcher.Match(actual)
 		return NewResult(!result.matched, result.description).WithCauses(result)
 	}
-	return NewMatcher(NewDescription("Not[%v]", matcher), match)
+	return NewMatcherf(match, "Not[%v]", matcher)
 }
 
 // Returns a Matcher that decorates another matcher.
 func Is(matcher *Matcher) *Matcher {
 	match := func (actual interface{}) *Result {
 		result := matcher.Match(actual)
-		description := NewDescription("Is[%v]", result.description)
-		return NewResult(result.matched, description).WithCauses(result)
+		return NewResult(result.matched, result.description).WithCauses(result.Causes()...)
 	}
-	return NewMatcher(NewDescription("Is[%v]", matcher), match)
+	return NewMatcherf(match, "Is[%v]", matcher)
 }
 
 
@@ -138,14 +130,13 @@ func Nil() *Matcher {
 }
 var _Nil *Matcher // singleton
 func init() {
-	wasNilDescription := NewDescription("was nil")
 	match := func (actual interface{}) *Result {
 		if _detectNil(actual) {
-			return NewResult(true, wasNilDescription)
+			return NewResultf(true, "was nil")
 		}
-		return NewResult(false, NewDescription("[%v] was not nil", actual))
+		return NewResultf(false, "[%v] was not nil", actual)
 	}
-	_Nil = NewMatcher(NewDescription("matches nil"), match)
+	_Nil = NewMatcherf(match, "matches nil")
 }
 
 // Returns a Matcher that matches if the actual value is 
@@ -156,14 +147,13 @@ func NonNil() *Matcher {
 }
 var _NonNil *Matcher
 func init() {
-	wasNilDescription := NewDescription("was nil")
 	match := func (actual interface{}) *Result {
 		if _detectNil(actual) {
-			return NewResult(false, wasNilDescription)
+			return NewResultf(false, "was nil")
 		}
-		return NewResult(true, NewDescription("[%v] was not nil", actual))
+		return NewResultf(true, "[%v] was not nil", actual)
 	}
-	_NonNil = NewMatcher(NewDescription("matches non-nil"), match)
+	_NonNil = NewMatcherf(match, "matches non-nil")
 }
 
 
@@ -172,13 +162,13 @@ func init() {
 func DeeplyEqualTo(expected interface{}) *Matcher {
 	match := func (actual interface{}) *Result {
 		if reflect.DeepEqual(expected, actual) {
-			return NewResult(true,
-				NewDescription("was deeply equal to [%v]", expected))
+			return NewResultf(true,
+				"was deeply equal to [%v]", expected)
 		}
-		return NewResult(false,
-			NewDescription("[%v] was not deeply equal to [%v]", actual, expected))
+		return NewResultf(false,
+			"[%v] was not deeply equal to [%v]", actual, expected)
 	}
-	return NewMatcher(NewDescription("DeeplyEqualTo[%v]", expected), match)
+	return NewMatcherf(match, "DeeplyEqualTo[%v]", expected)
 }
 
 
@@ -187,27 +177,27 @@ func DeeplyEqualTo(expected interface{}) *Matcher {
 // matcher fails to match an input value, later matchers are not
 // attempted.
 func AllOf(matchers...*Matcher) *Matcher {
-	descriptions := make([]*Description, len(matchers), len(matchers))
-	for index, matcher := range matchers {
-		descriptions[index] = NewDescription("[%v: %v]", index+1, matcher)
-	}
-	description := NewDescription("AllOf%v", descriptions)
 	match := func (actual interface{}) *Result {
 		var results []*Result
 		for index, matcher := range matchers {
 			result := matcher.Match(actual)
 			results := append(results, result)
 			if !result.Matched() {
-				because := NewDescription(
+				return NewResultf(false,
 					"Failed matcher %v of %v: [%v]",
-						index+1, len(matchers), matcher)
-				return NewResult(false, because).WithCauses(results...)
+					index+1, len(matchers), matcher).
+					WithCauses(results...)
 			}
 		}
-		because := NewDescription("Matched all %v matchers", len(matchers))
-		return NewResult(true, because).WithCauses(results...)
+		return NewResultf(true,
+			"Matched all %v matchers", len(matchers)).
+			WithCauses(results...)
 	}
-	return NewMatcher(description, match)
+	descriptions := make([]SelfDescribing, len(matchers), len(matchers))
+	for index, matcher := range matchers {
+		descriptions[index] = Description("[#%v: %v]", index+1, matcher)
+	}
+	return NewMatcherf(match, "AllOf%v", descriptions)
 }
 
 // Returns a short-circuiting Matcher that matches whenever all of
@@ -215,25 +205,26 @@ func AllOf(matchers...*Matcher) *Matcher {
 // matcher fails to match an input value, later matchers are not
 // attempted.
 func AnyOf(matchers...*Matcher) *Matcher {
-	descriptions := make([]*Description, len(matchers), len(matchers))
-	for index, matcher := range matchers {
-		descriptions[index] = NewDescription("[%v: %v]", index+1, matcher)
-	}
-	description := NewDescription("AnyOf%v", descriptions)
 	match := func (actual interface{}) *Result {
 		var results []*Result
 		for index, matcher := range matchers {
 			result := matcher.Match(actual)
 			results := append(results, result)
 			if result.Matched() {
-				because := NewDescription(
-					"Matched on matcher %v of %v: [%v]", index+1, len(matchers), matcher)
-				return NewResult(true, because).WithCauses(results...)
+				return NewResultf(true,
+					"Matched on matcher %v of %v: [%v]",
+					index+1, len(matchers), matcher).
+					WithCauses(results...)
 			}
 		}
-		because := NewDescription("Matched none of the %v matchers", len(matchers))
-		return NewResult(false, because).WithCauses(results...)
+		return NewResultf(false,
+			"Matched none of the %v matchers", len(matchers)).
+			WithCauses(results...)
 	}
-	return NewMatcher(description, match)
+	descriptions := make([]SelfDescribing, len(matchers), len(matchers))
+	for index, matcher := range matchers {
+		descriptions[index] = Description("[#%v: %v]", index+1, matcher)
+	}
+	return NewMatcherf(match, "AnyOf%v", descriptions)
 }
 

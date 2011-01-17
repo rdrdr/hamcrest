@@ -13,26 +13,32 @@ import (
 // --------------------------------------------------------------------
 
 // Hamcrest descriptions implement both fmt.Stringer and fmt.Formatter.
-type Description struct {
+type SelfDescribing interface {
+	fmt.Formatter
+	fmt.Stringer
+}
+
+type _Description struct {
 	format string
 	args []interface{}
 }
 
-// Creates an object that implements fmt.Formatter and fmt.Stringer using
-// args with the same meanings as fmt.Fprintf.  Note that this object
-// stores its given parameters and evaluates them lazily.
-func NewDescription(format string, args...interface{}) *Description {
-	return &Description{format:format, args:args}
-}
-
 // Implements fmt.Formatter.
-func (self *Description) Format(s fmt.State, ch int) {
+func (self *_Description) Format(s fmt.State, ch int) {
 	fmt.Fprintf(s, self.format, self.args...)
 }
 
 // Implements fmt.Stringer.
-func (self *Description) String() string {
+func (self *_Description) String() string {
 	return fmt.Sprintf(self.format, self.args...)
+}
+
+
+// Creates an object that implements fmt.Formatter and fmt.Stringer using
+// args with the same meanings as fmt.Fprintf.  Note that this object
+// stores its given parameters and evaluates them lazily.
+func Description(format string, args...interface{}) SelfDescribing {
+	return &_Description{format:format, args:args}
 }
 
 
@@ -42,18 +48,20 @@ func (self *Description) String() string {
 
 // Self-describing result of applying a Matcher to an input value.
 type Result struct {
+	description SelfDescribing
 	matched bool
 	value interface{}
 	matcher *Matcher
-	description *Description
 	causes []*Result
 }
-var _NO_CAUSES = make([]*Result, 0)
+// Creates a new Result using the given description.
+func NewResult(matched bool, description SelfDescribing) *Result {
+	return &Result{ matched: matched, description: description }
+}
 
-// Creates a new Result using the given description
-func NewResult(matched bool, description *Description) *Result {
-	return &Result{
-		matched:matched, description:description, causes:_NO_CAUSES}
+// Creates a new Result using the given format/args as a description.
+func NewResultf(matched bool, format string, args...interface{}) *Result {
+	return NewResult(matched, Description(format, args...))
 }
 
 // Returns true if the Match was successful.
@@ -84,6 +92,9 @@ func (self *Result) Format(s fmt.State, ch int) {
 // Returns a slice of sub-Results that caused this Result to
 // either match or not match.
 func (self *Result) Causes() []*Result {
+	if self.causes == nil {
+		return nil
+	}
 	causes := make([]*Result, len(self.causes))
 	copy(causes, self.causes)
 	return causes
@@ -92,7 +103,23 @@ func (self *Result) Causes() []*Result {
 // Returns a new Result, identical to this one, except with
 // the given causes.
 func (self *Result) WithCauses(causes... *Result) *Result {
-	return &Result{matched:self.matched, description:self.description, causes:causes}
+	return &Result{
+		matched:self.matched,
+		description:self.description,
+		matcher:self.matcher,
+		value:self.value,
+		causes:causes}
+}
+
+// Returns a new Result, identical to this one, except with
+// the given matcher and value.
+func (self *Result) WithMatcherAndValue(matcher *Matcher, value interface{}) *Result {
+	return &Result{
+		matched:self.matched,
+		description:self.description,
+		matcher:matcher,
+		value:value,
+		causes:self.Causes()}
 }
 
 // --------------------------------------------------------------------
@@ -104,15 +131,18 @@ func (self *Result) WithCauses(causes... *Result) *Result {
 // Matcher directly, but to create new matchers using the NewMatcher
 // factory function.
 type Matcher struct {
-	description *Description
+	description SelfDescribing
 	match func(v interface{}) *Result
 	comments []interface{}
 }
-var _NO_COMMENTS = make([]interface{}, 0)
+// Creates a new Matcher using the given description.
+func NewMatcher(match func(v interface{}) *Result, description SelfDescribing) *Matcher {
+	return &Matcher{ match: match, description: description }
+}
 
-// Creates a new Matcher using the given description
-func NewMatcher(description *Description, match func(v interface{}) *Result) *Matcher {
-	return &Matcher{description:description, match:match, comments:_NO_COMMENTS}
+// Creates a new Matcher using the given format/args as a description.
+func NewMatcherf(match func(v interface{}) *Result, format string, args...interface{}) *Matcher {
+	return NewMatcher(match, Description(format, args...))
 }
 
 // Implementation of SelfDescribing: fmt.Formatter.
@@ -148,7 +178,4 @@ func (self *Matcher) Comment(comments... interface{}) *Matcher {
 	all = append(all, comments...)
 	return &Matcher{description:self.description, match:self.match, comments:all}
 }
-
-
-
 

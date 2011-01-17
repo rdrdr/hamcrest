@@ -112,8 +112,8 @@ func Test_False(t *testing.T) {
 
 func Test_Matched(t *testing.T) {
 	matcher := Matched()
-	passResult := NewResult(true, NewDescription("pass"))
-	failResult := NewResult(false, NewDescription("fail"))
+	passResult := NewResultf(true, "pass")
+	failResult := NewResultf(false, "fail")
 	
 	checkResultIsMatching(t, matcher.Match(passResult), "matching")
 	checkResultIsNonMatching(t, matcher.Match(failResult), "non-matching")
@@ -125,8 +125,8 @@ func Test_Matched(t *testing.T) {
 
 func Test_DidNotMatch(t *testing.T) {
 	matcher := DidNotMatch()
-	passResult := NewResult(true, NewDescription("pass"))
-	failResult := NewResult(false, NewDescription("fail"))
+	passResult := NewResultf(true, "pass")
+	failResult := NewResultf(false, "fail")
 	
 	checkResultIsNonMatching(t, matcher.Match(passResult), "matching")
 	checkResultIsMatching(t, matcher.Match(failResult), "non-matching")
@@ -208,11 +208,10 @@ func Test_DeeplyEqualTo(t *testing.T) {
 func Test_AllOf(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := NewMatcher(NewDescription("snoop"), 
-		func(v interface{}) *Result {
+	snoop := NewMatcherf(func(v interface{}) *Result {
 			calledSnoop = true
-			return NewResult(false, NewDescription("snooped!"))
-		})
+			return NewResultf(false, "snooped!")
+		}, "Snoop")
 	checkResultIsMatching(t, AllOf(yes, yes, yes).match(true), "all yes")
 	checkResultIsNonMatching(t, AllOf(yes, yes, no).match(false), "not all yes")
 	checkResultIsNonMatching(t, AllOf(yes, no, snoop).match(false),
@@ -226,11 +225,10 @@ func Test_AllOf(t *testing.T) {
 func Test_AnyOf(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := NewMatcher(NewDescription("snoop"), 
-		func(v interface{}) *Result {
+	snoop := NewMatcherf(func(v interface{}) *Result {
 			calledSnoop = true
-			return NewResult(false, NewDescription("snooped!"))
-		})
+			return NewResultf(false, "snooped!")
+		}, "Snoop")
 	checkResultIsNonMatching(t, AnyOf(no, no, no).match(true), "all no")
 	checkResultIsMatching(t, AnyOf(no, no, yes).match(false), "one yes")
 	checkResultIsMatching(t, AnyOf(no, yes, snoop).match(false),

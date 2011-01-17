@@ -15,6 +15,7 @@ import (
 
 var Anything = hamcrest.Anything
 var Not = hamcrest.Not
+var EqualTo = hamcrest.DeeplyEqualTo
 
 func Test_ToString_builtinTypes(t *testing.T) {
 	we := asserter.Using(t)
@@ -49,13 +50,6 @@ func Test_ToString_onTypesThatImplementFormatter(t *testing.T) {
 	we := asserter.Using(t)
 	we.CheckThat(formatter, Not(EqualTo("123")))
 	we.CheckThat(formatter, ToString(EqualTo("123")))
-}
-
-func Test_EqualTo(t *testing.T) {
-	we := asserter.Using(t)
-	we.CheckThat("", EqualTo("").Comment("empty string"))
-	we.CheckThat("foo", EqualTo("foo").Comment("same contents"))
-	we.CheckThat("foo", Not(EqualTo("bar")).Comment("different contents"))
 }
 
 func Test_ToLower(t *testing.T) {

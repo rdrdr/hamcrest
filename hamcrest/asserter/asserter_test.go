@@ -77,16 +77,13 @@ var MATCHER_DESCRIPTION = "matcher_message"
 var MATCHER_COMMENT1 = "matcher_message_1_with_%v" // catch accidental expansion
 var MATCHER_COMMENT2 = 2
 var MATCHER_COMMENTS = []string{ MATCHER_COMMENT1, "2" }
-var MATCHER = hamcrest.NewMatcher(
-	hamcrest.NewDescription(MATCHER_DESCRIPTION),
+var MATCHER = hamcrest.NewMatcherf(
 	func (actual interface{}) *hamcrest.Result {
 		if actual == MATCHING_VALUE {
-			because := hamcrest.NewDescription(MATCHING_RESULT)
-			return hamcrest.NewResult(true, because)
+			return hamcrest.NewResultf(true, MATCHING_RESULT)
 		}
-		because := hamcrest.NewDescription(NONMATCHING_RESULT)
-		return hamcrest.NewResult(false, because)
-	}).Comment(MATCHER_COMMENT1, MATCHER_COMMENT2)
+		return hamcrest.NewResultf(false, NONMATCHING_RESULT)
+	}, MATCHER_DESCRIPTION).Comment(MATCHER_COMMENT1, MATCHER_COMMENT2)
 
 func Test_LogWhen_onNonMatchingResult(t *testing.T) {
 	buffer := newBuffer()
@@ -233,11 +230,10 @@ func Test_AssertThat(t *testing.T) {
 func Test_NullAsserter(t *testing.T) {
 	asserter := ThatDoesNothing()
 	snooped := false
-	snoopMatcher := hamcrest.NewMatcher(hamcrest.NewDescription("snoop"),
-		func(v interface{}) *hamcrest.Result { 
+	snoopMatcher := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result { 
 			snooped = true
-			return hamcrest.NewResult(true, hamcrest.NewDescription("snooped!"))
-		})
+			return hamcrest.NewResultf(true, "snooped!")
+		}, "Snoop")
 	asserter.AssertThat("x", snoopMatcher)
 	if snooped {
 		t.Fatal("Calling AssertThat() should not invoke matcher!")
