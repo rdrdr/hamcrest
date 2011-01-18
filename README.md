@@ -46,37 +46,67 @@ Packages
 You may also choose to write your own Matchers (see *Custom matchers*, below).
 
 
-How to use hamcrest at runtime:
-===============================
+Example of using hamcrest at runtime:
+=====================================
 
-Create an Asserter.  (The simplest way to do this is with the factory
-method that logs problems to stderr and calls `panic` on `FailNow`.)
-	import "hamcrest/asserter"
-	var we = asserter.UsingStderr()
+Create an `Asserter`.  The simplest way to do this is with the factory
+method `UsingStderr()`, which returns an `Asserter` that logs problems to
+stderr and calls `panic` on `FailNow`.  Use that asserter during init()
+to make sure globals are properly initialized:
 
-Use that asserter at initialization time to make sure globals are
-properly initialized:
 	import (
-		"hamcrest/collections"
+		"hamcrest"
+		"hamcrest/asserter"
 		"hamcrest/strings"
 	)
-	var hostnames = []string { "foo.mydomain.com", "bar.mydomain.com" }
+	
+	var hostnames = []string { "news.foo.com", "news.bar.com" }
+
 	func init() {
-		eachElement := collections.EachElement
-		isForMyDomain := strings.EndsWith(".mydomain.com")
-		we.FailNowUnless(hostnames, eachElement(isForMyDomain))
+		// The next three aliases are to improve readability
+		AnyOf := hamcrest.AnyOf
+		EndsWith := strings.EndsWith
+		IsForOneOfOurDomains := AnyOf(EndsWith(".foo.com"),
+		                              EndsWith(".bar.com"))
+		
+		var we = asserter.UsingStderr()
+		for _, hostname := range hostnames {
+			we.FailNowUnless(hostname, IsForOneOfOurDomains)
+		}
 	}
 
-Or use it at runtime to guarantee that a method's preconditions are met:
+Or use the `we` asserter at runtime to guarantee that a method's
+preconditions are met:
+
 	func WriteTo(filename string) bool {
 		we.AssertThat(filename, EndsWith(".txt").Comment("Must have txt extension."))
 		// Use filename here.
 	}
 
-Note:  Since Hamcrest matchers allocate Description and Result objects
-to explain in great detail why they did or did not match, users should
-be generally aware of this cost when using matchers inside performance-
-critical loops.
+Or use it during development to write your tests in the same file as your code:
+
+	func PigLatin(input string) string {
+		...implementation...
+	}
+	
+	func init() {
+		we := asserter.UsingStderr()
+		we.AssertThat(PigLatin("easier"), EqualTo("easier-ay"))
+		we.AssertThat(PigLatin("testing"), EqualTo("esting-tay"))
+	}
+	
+This makes it easy to cut-and-paste each `init()` block into your
+testing suite.  While moving the block over, replace:
+
+	func init() {
+		we := asserter.UsingStderr()
+		...
+
+With an `Asserter` that uses the testing infrastructure:
+
+	func Test_PigLatin(t *testing.T) {
+		we := asserter.Using(t)
+		...
 
 How to use hamcrest for testing:
 ================================
@@ -139,6 +169,20 @@ you can assign to local names:
 	we.CheckThat("foobar", AllOf(HasPrefix("foo"), HasSuffix("bar")))
 
 
+Performance note:
+=================
+Note:  Hamcrest matchers allocate Description and Result objects to
+explain in great detail why they did or did not match. However, these
+objects are lazily evaluated.  Users should be generally aware that
+there is an *object allocation* cost to using Hamcrest matchers, but
+there is (generally) no *string construction* cost unless a Hamcrest
+Matcher or Result is explicitly asked to self-describe.
+
+Still, users who are particularly sensitive to performance concerns
+may wish to think carefully before using Hamcrest matchers in
+performance-critical bottlenecks.
+
+
 A tour of common matchers
 =========================
 
@@ -183,19 +227,18 @@ Custom matchers
 Example:
 
     func IsMultipleOf(k int) *hamcrest.Matcher {
-        match := func(actual interface{}) {
+        pass := NewResultf(true, "was a multiple of %v", k)
+        fail := NewResultf(false, "was not a multiple of %v", k)
+        match := func(actual interface{}) *hamcrest.Result {
             if n, ok := actual.(int); ok {
                 if n % k == 0 {
-                    why := NewDescription("%v is a multiple of %v", n, k))
-                    return NewResult(true, why)
+                    return pass
                 }
-                why := NewDescription("%v is not a multiple of %v", n, k))
-                return NewResult(false, why)
+                return fail
             }
-            why := NewDescription("can't convert %T[%v] to int", actual, actual))
-            return NewResult(false, why)
+            return NewResult(false, "was a %T, not an int", actual)
         }
-        return NewMatcher(hamcrest.NewDescription("multiple of %v", n), match)
+        return NewMatcher(match, "multiple of %v", k)
     }
 
 And used:

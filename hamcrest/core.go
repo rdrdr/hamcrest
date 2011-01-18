@@ -5,6 +5,7 @@
 package hamcrest
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -86,6 +87,64 @@ func init() {
 		return NewResultf(false, "[%v] was not a result", actual)
 	}
 	_DidNotMatch = NewMatcherf(match, "DidNotMatch")
+}
+
+// Returns a Matcher that matches on values that cause the given
+// functionOrMatcher to panic.
+//
+// functionOrMatcher should either be a function that accepts one
+// parameter or a Matcher
+func PanicWhenApplying(functionOrMatcher interface{}, name string) *Matcher {
+	var doSomething func(interface{})
+	if matcher, ok := functionOrMatcher.(*Matcher); ok {
+		doSomething = func(actual interface{}) { matcher.Match(actual) }
+	} else {
+		value := reflect.NewValue(functionOrMatcher)
+		if funcValue, ok := value.(*reflect.FuncValue); ok {
+			funcType := funcValue.Type().(*reflect.FuncType)
+			numIn := funcType.NumIn()
+			if numIn == 0 {
+				panic(fmt.Sprintf("func must accept a single arg, was %T", functionOrMatcher))
+			}
+			inType := funcType.In(0)
+			switch {
+			case numIn == 1: // always ok
+			case numIn == 2 && funcType.DotDotDot(): // ok
+			default:
+				panic(fmt.Sprintf("func must accept a single arg, was %T", functionOrMatcher))
+			}
+			doSomething = func(actual interface{}) {
+				actualValue := reflect.NewValue(actual)
+				argValues := make([]reflect.Value, numIn, numIn)
+				if numIn == 1 && funcType.DotDotDot() {
+					inSlice := reflect.MakeSlice(inType.(*reflect.SliceType), 1, 1)
+					inValue := inSlice.Elem(0)
+					inValue.SetValue(actualValue)
+					argValues[0] = inSlice
+				} else {
+					inValue := reflect.MakeZero(inType)
+					inValue.SetValue(actualValue)
+					argValues[0] = inValue
+					if numIn == 2 && funcType.DotDotDot() {
+						inType2 := funcType.In(1)
+						argValues[1] = reflect.MakeSlice(inType2.(*reflect.SliceType), 0, 0)
+					}
+				}
+				funcValue.Call(argValues)
+			}
+		}
+	}
+	match := func (actual interface{}) (result *Result) {
+		defer func() {
+			if recover() != nil {
+				result = NewResultf(true, "Panicked")
+			}
+		}()
+		doSomething(actual)
+		result = NewResultf(false, "Did not panic")
+		return
+	}
+	return NewMatcherf(match, "PanicWhenApplying[%v]", name)
 }
 
 
@@ -226,5 +285,61 @@ func AnyOf(matchers...*Matcher) *Matcher {
 		descriptions[index] = Description("[#%v: %v]", index+1, matcher)
 	}
 	return NewMatcherf(match, "AnyOf%v", descriptions)
+}
+
+
+// Returns a function that composes the given function with a Matcher, such as:
+//    ToLength := Composer(func(s string) int { return len(s) }, "Len")
+// And then:
+//    HasLengthThree := ToLength(Is(EqualTo(3)))
+//    HasLengthThree.Match("no").Matched() // false
+//    HasLengthThree.Match("yes").Matched() // true
+//
+// The given function must be able to accept a single argument and
+// return a single argument.
+func Composer(function interface{}, name string) func(*Matcher) *Matcher  {
+	funcValue := reflect.NewValue(function).(*reflect.FuncValue)
+	funcType := funcValue.Type().(*reflect.FuncType)
+	numIn := funcType.NumIn()
+	switch {
+	case numIn == 1:
+	case numIn == 2 && funcType.DotDotDot():
+	default:
+		panic(fmt.Sprintf("func must accept a single arg, was %T", function))
+	}
+	inType := funcType.In(0)
+	numOut := funcType.NumOut()
+	if numOut != 1 {
+		panic(fmt.Sprintf("function must return exactly one value, was %v by function %v", numOut, function))
+	}
+	return func(matcher *Matcher) *Matcher {
+		match := func (actual interface{}) *Result {
+			actualValue := reflect.NewValue(actual)
+			argValues := make([]reflect.Value, numIn, numIn)
+			if numIn == 1 && funcType.DotDotDot() {
+				inSlice := reflect.MakeSlice(inType.(*reflect.SliceType), 1, 1)
+				inValue := inSlice.Elem(0)
+				inValue.SetValue(actualValue)
+				argValues[0] = inSlice
+			} else {
+				inValue := reflect.MakeZero(inType)
+				inValue.SetValue(actualValue)
+				argValues[0] = inValue
+				if numIn == 2 && funcType.DotDotDot() {
+					inType2 := funcType.In(1)
+					inSlice := reflect.MakeSlice(inType2.(*reflect.SliceType), 0, 0)
+					argValues[1] = inSlice
+				}
+			}
+			outValues := funcValue.Call(argValues)
+			outValue := outValues[0]
+			out := outValue.Interface()
+			result := matcher.Match(out)
+			return NewResultf(result.Matched(),
+				"%v(%#v) = %v", name, actual, out).
+				WithCauses(result)
+		}
+		return NewMatcherf(match, "%v[%v]", name, matcher)
+	}
 }
 
