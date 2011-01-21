@@ -179,8 +179,9 @@ func HasSuffix(suffix string) *hamcrest.Matcher {
 func Contains(substring string) *hamcrest.Matcher {
 	match := func (s string) *hamcrest.Result {
 		extra := 8
-		if found := strings.Index(s, substring); found >= 0 {
-			start, end := found - extra, found + len(substring) + extra
+		if foundStart := strings.Index(s, substring); foundStart >= 0 {
+			foundEnd := foundStart + len(substring)
+			start, end := foundStart - extra, foundEnd + extra
 			prefix, suffix := "", ""
 			if start <= 0 {
 				start = 0
@@ -193,8 +194,8 @@ func Contains(substring string) *hamcrest.Matcher {
 				suffix = "..."
 			}
 			return hamcrest.NewResultf(true,
-				"substring \"%v\" appears in \"%v%v%v\"",
-				substring, prefix, s[start:end], suffix)
+				"substring \"%v\" appears in \"%v%v[%v]%v%v\"", substring,
+				prefix, s[start:foundStart], substring, s[foundEnd:end], suffix)
 		}
 		return hamcrest.NewResultf(false,
 			"substring \"%v\" does not appear in \"%v\"",

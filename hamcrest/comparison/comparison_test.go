@@ -5,12 +5,12 @@
 package comparison
 
 import (
-	"hamcrest"
 	"hamcrest/asserter"
+	"hamcrest/core"
 	"testing"
 )
 
-var Not = hamcrest.Not
+var Not = core.Not
 
 func Test_GreaterThan(t *testing.T) {
 	we := asserter.Using(t)

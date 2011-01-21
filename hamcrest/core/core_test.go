@@ -2,15 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package hamcrest
+package core
 
 import (
+	"hamcrest"
 	"fmt"
 	"reflect"
 	"testing"
 )
 
-func _LogResult(t *testing.T, indent string, result *Result) {
+func _LogResult(t *testing.T, indent string, result *hamcrest.Result) {
 	s := "Matched"
 	if !result.Matched() {
 		s = "Nonmatch"
@@ -22,7 +23,7 @@ func _LogResult(t *testing.T, indent string, result *Result) {
 	}
 }
 
-func checkResultIsMatching(t *testing.T, result *Result, message string) {
+func checkResultIsMatching(t *testing.T, result *hamcrest.Result, message string) {
 	if !result.Matched() {
 		t.Errorf("Expected matching result from applying %v to %#v, was [%v] %v",
 			result.Matcher(), result.Value(), result, message)
@@ -30,7 +31,7 @@ func checkResultIsMatching(t *testing.T, result *Result, message string) {
 	_LogResult(t, "", result)
 }
 
-func checkResultIsNonMatching(t *testing.T, result *Result, message string) {
+func checkResultIsNonMatching(t *testing.T, result *hamcrest.Result, message string) {
 	if result.Matched() {
 		t.Errorf("Expected non-matching result from applying %v to %#v, was [%v].  Message: %v",
 			result.Matcher(), result.Value(), result, message)
@@ -49,7 +50,7 @@ var uninitialized struct {
 	_interface interface{}
 }
 
-func checkMatcherIsMatchingOnNils(t *testing.T, matcher *Matcher) {
+func checkMatcherIsMatchingOnNils(t *testing.T, matcher *hamcrest.Matcher) {
 	checkResultIsMatching(t, matcher.Match(nil), "nil")
 	checkResultIsMatching(t, matcher.Match(uninitialized._pointer), "uninitialized pointer")
 	checkResultIsMatching(t, matcher.Match(uninitialized._func), "uninitialized func")
@@ -59,7 +60,7 @@ func checkMatcherIsMatchingOnNils(t *testing.T, matcher *Matcher) {
 	checkResultIsMatching(t, matcher.Match(uninitialized._interface), "uninitialized interface")
 }
 
-func checkMatcherIsNonMatchingOnNils(t *testing.T, matcher *Matcher) {
+func checkMatcherIsNonMatchingOnNils(t *testing.T, matcher *hamcrest.Matcher) {
 	checkResultIsNonMatching(t, matcher.Match(nil), "nil")
 	checkResultIsNonMatching(t, matcher.Match(uninitialized._pointer), "uninitialized pointer")
 	checkResultIsNonMatching(t, matcher.Match(uninitialized._func), "uninitialized func")
@@ -69,7 +70,7 @@ func checkMatcherIsNonMatchingOnNils(t *testing.T, matcher *Matcher) {
 	checkResultIsNonMatching(t, matcher.Match(uninitialized._interface), "uninitialized interface")
 }
 
-func logSamples(t *testing.T, matcher *Matcher) {
+func logSamples(t *testing.T, matcher *hamcrest.Matcher) {
 	t.Logf("Sample results for: %v\n", matcher)
 	t.Logf("\ton true: %v\n", matcher.Match(true))
 	t.Logf("\ton false: %v\n", matcher.Match(false))
@@ -122,32 +123,6 @@ func Test_False(t *testing.T) {
 	checkResultIsNonMatching(t, matcher.Match(true), "bool true")
 	checkResultIsMatching(t, matcher.Match(false), "bool false")
 	checkResultIsNonMatching(t, matcher.Match("foo"), "string")
-	checkMatcherIsNonMatchingOnNils(t, matcher)
-	logSamples(t, matcher)
-}
-
-func Test_Matched(t *testing.T) {
-	matcher := Matched()
-	passResult := NewResultf(true, "pass")
-	failResult := NewResultf(false, "fail")
-	
-	checkResultIsMatching(t, matcher.Match(passResult), "matching")
-	checkResultIsNonMatching(t, matcher.Match(failResult), "non-matching")
-	checkResultIsNonMatching(t, matcher.Match(nil), "nil")
-	checkResultIsNonMatching(t, matcher.Match("foo"), "not a Result")
-	checkMatcherIsNonMatchingOnNils(t, matcher)
-	logSamples(t, matcher)
-}
-
-func Test_DidNotMatch(t *testing.T) {
-	matcher := DidNotMatch()
-	passResult := NewResultf(true, "pass")
-	failResult := NewResultf(false, "fail")
-	
-	checkResultIsNonMatching(t, matcher.Match(passResult), "matching")
-	checkResultIsMatching(t, matcher.Match(failResult), "non-matching")
-	checkResultIsNonMatching(t, matcher.Match(nil), "nil")
-	checkResultIsNonMatching(t, matcher.Match("foo"), "not a Result")
 	checkMatcherIsNonMatchingOnNils(t, matcher)
 	logSamples(t, matcher)
 }
@@ -224,9 +199,9 @@ func Test_DeeplyEqualTo(t *testing.T) {
 func Test_AllOf(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := NewMatcherf(func(v interface{}) *Result {
+	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
 			calledSnoop = true
-			return NewResultf(false, "snooped!")
+			return hamcrest.NewResultf(false, "snooped!")
 		}, "Snoop")
 	checkResultIsMatching(t, AllOf(yes, yes, yes).Match(true), "all yes")
 	checkResultIsNonMatching(t, AllOf(yes, yes, no).Match(false), "not all yes")
@@ -241,9 +216,9 @@ func Test_AllOf(t *testing.T) {
 func Test_AnyOf(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := NewMatcherf(func(v interface{}) *Result {
+	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
 			calledSnoop = true
-			return NewResultf(false, "snooped!")
+			return hamcrest.NewResultf(false, "snooped!")
 		}, "Snoop")
 	checkResultIsNonMatching(t, AnyOf(no, no, no).Match(true), "all no")
 	checkResultIsMatching(t, AnyOf(no, no, yes).Match(false), "one yes")
@@ -255,40 +230,40 @@ func Test_AnyOf(t *testing.T) {
 	logSamples(t, AnyOf(True(), Nil(), DeeplyEqualTo(42)))
 }
 
-func Test_Composer_onFunction_FromType_ToType(t *testing.T) {
-	CheckEven := Composer(func(n int) bool { return n&1 == 0 }, "CheckEven")
+func Test_Applying_onFunction_FromType_ToType(t *testing.T) {
+	CheckEven := Applying(func(n int) bool { return n&1 == 0 }, "CheckEven")
 	checkResultIsMatching(t, CheckEven(Is(True())).Match(1234), "is even")
 	checkResultIsMatching(t, CheckEven(Is(False())).Match(123), "is not even")
 	checkResultIsMatching(t, Not(CheckEven(Is(False()))).Match(1234), "not is not even")
 	checkResultIsMatching(t, Not(CheckEven(Is(True()))).Match(123), "not is even")
 	Even := CheckEven(Is(True()))
-	Length := Composer(func(s string) int { return len(s) }, "Length")
+	Length := Applying(func(s string) int { return len(s) }, "Length")
 	checkResultIsMatching(t, Length(Is(Even)).Match("1234"), "length is even")
 	checkResultIsMatching(t, Length(Not(Even)).Match("123"), "length is not even")
 	checkResultIsMatching(t, Not(Length(Even)).Match("123"), "not length is even")
 }
 
-func Test_Composer_onFunction_FromTypeDotDotDot_ToType(t *testing.T) {
-	CheckEven := Composer(func(n...int) bool { return n[0]&1 == 0 }, "CheckEven")
+func Test_Applying_onFunction_FromTypeDotDotDot_ToType(t *testing.T) {
+	CheckEven := Applying(func(n...int) bool { return n[0]&1 == 0 }, "CheckEven")
 	checkResultIsMatching(t, CheckEven(Is(True())).Match(1234), "is even")
 	checkResultIsMatching(t, CheckEven(Is(False())).Match(123), "is not even")
 	checkResultIsMatching(t, Not(CheckEven(Is(False()))).Match(1234), "not is not even")
 	checkResultIsMatching(t, Not(CheckEven(Is(True()))).Match(123), "not is even")
 	Even := CheckEven(Is(True()))
-	Length := Composer(func(s...string) int { return len(s[0]) }, "Length")
+	Length := Applying(func(s...string) int { return len(s[0]) }, "Length")
 	checkResultIsMatching(t, Length(Is(Even)).Match("1234"), "length is even")
 	checkResultIsMatching(t, Length(Not(Even)).Match("123"), "length is not even")
 	checkResultIsMatching(t, Not(Length(Even)).Match("123"), "not length is even")
 }
 
-func Test_Composer_onFunction_FromTypeTypeDotDotDot_ToType(t *testing.T) {
-	CheckEven := Composer(func(n int, other...string) bool { return n&1 == 0 }, "CheckEven")
+func Test_Applying_onFunction_FromTypeTypeDotDotDot_ToType(t *testing.T) {
+	CheckEven := Applying(func(n int, other...string) bool { return n&1 == 0 }, "CheckEven")
 	checkResultIsMatching(t, CheckEven(Is(True())).Match(1234), "is even")
 	checkResultIsMatching(t, CheckEven(Is(False())).Match(123), "is not even")
 	checkResultIsMatching(t, Not(CheckEven(Is(False()))).Match(1234), "not is not even")
 	checkResultIsMatching(t, Not(CheckEven(Is(True()))).Match(123), "not is even")
 	Even := CheckEven(Is(True()))
-	Length := Composer(func(s string, other...int) int { return len(s) }, "Length")
+	Length := Applying(func(s string, other...int) int { return len(s) }, "Length")
 	checkResultIsMatching(t, Length(Is(Even)).Match("1234"), "length is even")
 	checkResultIsMatching(t, Length(Not(Even)).Match("123"), "length is not even")
 	checkResultIsMatching(t, Not(Length(Even)).Match("123"), "not length is even")

@@ -5,16 +5,17 @@
 package asserter
 
 import (
+	"hamcrest/core"
 	"fmt"
 	"io"
 	"os"
 	"hamcrest"
 )
 
-var _True = hamcrest.True
-var _False = hamcrest.False
-var _Nil = hamcrest.Nil
-var _NonNil = hamcrest.NonNil
+var _True = core.True
+var _False = core.False
+var _Nil = core.Nil
+var _NonNil = core.NonNil
 
 
 // Used by an Asserter to write log/error messages.
@@ -273,19 +274,19 @@ func (self *_Asserter) CheckThat(value interface{}, matcher *hamcrest.Matcher) {
 }
 
 func (self *_Asserter) CheckTrue(value bool, comments ...interface{}) {
-	self.CheckThat(value, hamcrest.True().Comment(comments...))
+	self.CheckThat(value, core.True().Comment(comments...))
 }
 
 func (self *_Asserter) CheckFalse(value bool, comments ...interface{}) {
-	self.CheckThat(value, hamcrest.False().Comment(comments...))
+	self.CheckThat(value, core.False().Comment(comments...))
 }
 
 func (self *_Asserter) CheckNil(value interface{}, comments ...interface{}) {
-	self.CheckThat(value, hamcrest.Nil().Comment(comments...))
+	self.CheckThat(value, core.Nil().Comment(comments...))
 }
 
 func (self *_Asserter) CheckNonNil(value interface{}, comments ...interface{}) {
-	self.CheckThat(value, hamcrest.NonNil().Comment(comments...))
+	self.CheckThat(value, core.NonNil().Comment(comments...))
 }
 
 func (self *_Asserter) AssertThat(value interface{}, matcher *hamcrest.Matcher) {
@@ -293,17 +294,17 @@ func (self *_Asserter) AssertThat(value interface{}, matcher *hamcrest.Matcher) 
 }
 
 func (self *_Asserter) AssertTrue(value bool, comments ...interface{}) {
-	self.AssertThat(value, hamcrest.True().Comment(comments...))
+	self.AssertThat(value, core.True().Comment(comments...))
 }
 
 func (self *_Asserter) AssertFalse(value bool, comments ...interface{}) {
-	self.AssertThat(value, hamcrest.False().Comment(comments...))
+	self.AssertThat(value, core.False().Comment(comments...))
 }
 
 func (self *_Asserter) AssertNil(value interface{}, comments ...interface{}) {
-	self.AssertThat(value, hamcrest.Nil().Comment(comments...))
+	self.AssertThat(value, core.Nil().Comment(comments...))
 }
 
 func (self *_Asserter) AssertNonNil(value interface{}, comments ...interface{}) {
-	self.AssertThat(value, hamcrest.NonNil().Comment(comments...))
+	self.AssertThat(value, core.NonNil().Comment(comments...))
 }

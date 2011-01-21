@@ -79,12 +79,13 @@ func AnyMapElement(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 				"Was not map: was type %T", actual)
 		}
 		keys := value.Keys()
-		for i, key := range value.Keys() {
-			elem := value.Elem(key).Interface()
+		for i, keyValue := range value.Keys() {
+			elem := value.Elem(keyValue).Interface()
 			result := matcher.Match(elem)
 			if result.Matched() {
 				return hamcrest.NewResultf(true,
-					"Matched element %v of %v: %v", i+1, len(keys), elem).
+					"Matched map element [%v/%v] with key [%v]: %v",
+					i+1, len(keys), keyValue.Interface(), elem).
 					WithCauses(result)
 			}
 		}
@@ -103,13 +104,13 @@ func EveryMapElement(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 				"Was not map: was type %T", actual)
 		}
 		keys := value.Keys()
-		for _, key := range keys {
-			elem := value.Elem(key).Interface()
+		for i, keyValue := range keys {
+			elem := value.Elem(keyValue).Interface()
 			result := matcher.Match(elem)
 			if !result.Matched() {
 				return hamcrest.NewResultf(false,
-					"Failed to match map element at key[%v]: %v",
-					key, elem).
+					"Failed to match map element [%v/%v] with key[%v]: %v",
+					i+1, len(keys), keyValue.Interface(), elem).
 					WithCauses(result)
 			}
 		}

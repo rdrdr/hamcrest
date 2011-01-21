@@ -6,14 +6,15 @@ package logic
 
 import (
 	"hamcrest"
+	"hamcrest/core"
 	"reflect"
 	"testing"
 )
 
-var Anything = hamcrest.Anything
-var True = hamcrest.True
-var False = hamcrest.False
-var Not = hamcrest.Not
+var Anything = core.Anything
+var True = core.True
+var False = core.False
+var Not = core.Not
 
 func checkResultIsMatching(t *testing.T, result *hamcrest.Result, message string) {
 	if !result.Matched() {

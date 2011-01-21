@@ -1,6 +1,7 @@
 package main
 
 import (
+	"hamcrest"
 	"hamcrest/asserter"
 	"hamcrest/strings"
 	"hamcrest/logic"
@@ -9,18 +10,6 @@ import (
 )
 
 
-
-
-
-
-var sayings = []string {
-	"Don't count your foobars before they hatch",
-	"My dog has fleas",
-	"My foobar has fleas",
-	"My bar has foos",
-	"My food has fleas",
-}
-
 var we = asserter.UsingStderr()
 
 func init() {
@@ -28,21 +17,35 @@ func init() {
 	we.AssertThat(len(sayings), AtLeast(3).Comment("Should have at least 3 testcases"))
 }
 
-func main() {
-
-	println("This is a demo of hamcrest asserters.")
-	println()
-	println("Here's an example of a (non-fatal) check failing:")
-	we.CheckThat("team", strings.Contains("I").Comment("Coach told me this"))
-	println()
-	println("Here's an example of a fatal check failing:")
-	println()
-	
-	EveryElement := collections.EveryElement
-	If := logic.If
-	
-	
-	we.AssertThat(sayings, EveryElement(
-		If(strings.HasPrefix("foo")).Then(strings.Contains("bar"))))
-	
+var sayings = map[string][]string {
+	"Hamlet": {
+		"To be or not, whatever",
+		"Get thee to a foobarery",
+	},
+	"ConFOOcious": {
+		"Don't count your foobars before they hatch",
+		"My dog has fleas",
+		"My foobar has fleas",
+		"My bar has foos",
+		"My food has fleas",
+	},
+	"Hall of Presidents": {
+		"There is foo in my bar.",
+		"Well, foo, there you bar again.",
+		"No new foobars.",
+		"I never fooed that bar.",
+		"I'm the foobarerer.",
+		"A vote for me is a vote for foo and bar.",
+	},
 }
+
+func init() {
+	ForEverySaying := func(m *hamcrest.Matcher) *hamcrest.Matcher {
+		return collections.EveryMapElement(collections.EveryElement(m))
+	}
+	If := logic.If
+	Contains := strings.Contains
+	we.AssertThat(sayings, ForEverySaying(If(Contains("foo")).Then(Contains("bar"))))
+}
+
+func main() {}

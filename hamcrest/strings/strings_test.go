@@ -6,16 +6,16 @@ package strings
 
 import (
 	"fmt"
-	"hamcrest"
 	"hamcrest/asserter"
 	"hamcrest/comparison"
+	"hamcrest/core"
 	"testing"
 )
 
 
-var Anything = hamcrest.Anything
-var Not = hamcrest.Not
-var EqualTo = hamcrest.DeeplyEqualTo
+var Anything = core.Anything
+var Not = core.Not
+var EqualTo = core.DeeplyEqualTo
 
 func Test_ToString_builtinTypes(t *testing.T) {
 	we := asserter.Using(t)

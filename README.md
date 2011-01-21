@@ -70,7 +70,7 @@ to make sure globals are properly initialized:
 		                              EndsWith(".bar.com"))
 		
 		var we = asserter.UsingStderr()
-		for _, hostname := range hostnames {
+		for _ , hostname := range hostnames {
 			we.FailNowUnless(hostname, IsForOneOfOurDomains)
 		}
 	}

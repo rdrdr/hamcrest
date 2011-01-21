@@ -5,17 +5,17 @@
 package collections
 
 import (
-	"hamcrest"
 	"hamcrest/asserter"
 	"hamcrest/comparison"
+	"hamcrest/core"
 	//"reflect"
 	//"runtime"
 	"testing"
 )
 
-var Is = hamcrest.Is
-var Not = hamcrest.Not
-var Anything = hamcrest.Anything
+var Is = core.Is
+var Not = core.Not
+var Anything = core.Anything
 var EqualTo = comparison.EqualTo
 var LessThan = comparison.LessThan
 var GreaterThan = comparison.GreaterThan

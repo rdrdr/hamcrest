@@ -6,6 +6,7 @@ package reflect
 
 import (
 	"hamcrest"
+	"hamcrest/core"
 	"reflect"
 )
 
@@ -47,79 +48,79 @@ func _TypeMatcher(name string, expectedType reflect.Type) *hamcrest.Matcher {
 var (
 	boolType = reflect.Typeof(false)
 	boolMatcher = _TypeMatcher("Bool", boolType)
-	boolTypeMatcher = hamcrest.DeeplyEqualTo(boolType)
+	boolTypeMatcher = core.DeeplyEqualTo(boolType)
 	
 	intType = reflect.Typeof(int(0))
 	intMatcher = _TypeMatcher("Int", intType)
-	intTypeMatcher = hamcrest.DeeplyEqualTo(intType)
+	intTypeMatcher = core.DeeplyEqualTo(intType)
 	
 	int8Type = reflect.Typeof(int8(0))
 	int8Matcher = _TypeMatcher("Int8", int8Type)
-	int8TypeMatcher = hamcrest.DeeplyEqualTo(int8Type)
+	int8TypeMatcher = core.DeeplyEqualTo(int8Type)
 	
 	int16Type = reflect.Typeof(int16(0))
 	int16Matcher = _TypeMatcher("Int16", int16Type)
-	int16TypeMatcher = hamcrest.DeeplyEqualTo(int16Type)
+	int16TypeMatcher = core.DeeplyEqualTo(int16Type)
 
 	int32Type = reflect.Typeof(int32(0))
 	int32Matcher = _TypeMatcher("Int32", int32Type)
-	int32TypeMatcher = hamcrest.DeeplyEqualTo(int32Type)
+	int32TypeMatcher = core.DeeplyEqualTo(int32Type)
 	
 	int64Type = reflect.Typeof(int64(0))
 	int64Matcher = _TypeMatcher("Int64", int64Type)
-	int64TypeMatcher = hamcrest.DeeplyEqualTo(int64Type)
+	int64TypeMatcher = core.DeeplyEqualTo(int64Type)
 	
 	uintType = reflect.Typeof(uint(0))
 	uintMatcher = _TypeMatcher("Uint", uintType)
-	uintTypeMatcher = hamcrest.DeeplyEqualTo(uintType)
+	uintTypeMatcher = core.DeeplyEqualTo(uintType)
 	
 	uint8Type = reflect.Typeof(uint8(0))
 	uint8Matcher = _TypeMatcher("Uint8", uint8Type)
-	uint8TypeMatcher = hamcrest.DeeplyEqualTo(uint8Type)
+	uint8TypeMatcher = core.DeeplyEqualTo(uint8Type)
 	
 	uint16Type = reflect.Typeof(uint16(0))
 	uint16Matcher = _TypeMatcher("Uint16", uint16Type)
-	uint16TypeMatcher = hamcrest.DeeplyEqualTo(uint16Type)
+	uint16TypeMatcher = core.DeeplyEqualTo(uint16Type)
 
 	uint32Type = reflect.Typeof(uint32(0))
 	uint32Matcher = _TypeMatcher("Uint32", uint32Type)
-	uint32TypeMatcher = hamcrest.DeeplyEqualTo(uint32Type)
+	uint32TypeMatcher = core.DeeplyEqualTo(uint32Type)
 	
 	uint64Type = reflect.Typeof(uint64(0))
 	uint64Matcher = _TypeMatcher("Uint64", uint64Type)
-	uint64TypeMatcher = hamcrest.DeeplyEqualTo(uint64Type)
+	uint64TypeMatcher = core.DeeplyEqualTo(uint64Type)
 
 	uintptrType = reflect.Typeof(uintptr(0))
 	uintptrMatcher = _TypeMatcher("Uintptr", uintptrType)
-	uintptrTypeMatcher = hamcrest.DeeplyEqualTo(uintptrType)
+	uintptrTypeMatcher = core.DeeplyEqualTo(uintptrType)
 	
 	floatType = reflect.Typeof(float(0))
 	floatMatcher = _TypeMatcher("Float", floatType)
-	floatTypeMatcher = hamcrest.DeeplyEqualTo(floatType)
+	floatTypeMatcher = core.DeeplyEqualTo(floatType)
 	
 	float32Type = reflect.Typeof(float32(0))
 	float32Matcher = _TypeMatcher("Float32", float32Type)
-	float32TypeMatcher = hamcrest.DeeplyEqualTo(float32Type)
+	float32TypeMatcher = core.DeeplyEqualTo(float32Type)
 
 	float64Type = reflect.Typeof(float64(0))
 	float64Matcher = _TypeMatcher("Float64", float64Type)
-	float64TypeMatcher = hamcrest.DeeplyEqualTo(float64Type)
+	float64TypeMatcher = core.DeeplyEqualTo(float64Type)
 
 	complexType = reflect.Typeof(complex(0i))
 	complexMatcher = _TypeMatcher("Complex", complexType)
-	complexTypeMatcher = hamcrest.DeeplyEqualTo(complexType)
+	complexTypeMatcher = core.DeeplyEqualTo(complexType)
 
 	complex64Type = reflect.Typeof(complex64(0i))
 	complex64Matcher = _TypeMatcher("Complex64", complex64Type)
-	complex64TypeMatcher = hamcrest.DeeplyEqualTo(complex64Type)
+	complex64TypeMatcher = core.DeeplyEqualTo(complex64Type)
 
 	complex128Type = reflect.Typeof(complex128(0i))
 	complex128Matcher = _TypeMatcher("Complex128", complex128Type)
-	complex128TypeMatcher = hamcrest.DeeplyEqualTo(complex128Type)
+	complex128TypeMatcher = core.DeeplyEqualTo(complex128Type)
 
 	stringType = reflect.Typeof("")
 	stringMatcher = _TypeMatcher("String", stringType)
-	stringTypeMatcher = hamcrest.DeeplyEqualTo(stringType)
+	stringTypeMatcher = core.DeeplyEqualTo(stringType)
 )
 
 func Bool() *hamcrest.Matcher { return boolMatcher }

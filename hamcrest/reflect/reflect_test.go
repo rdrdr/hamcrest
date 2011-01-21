@@ -7,34 +7,34 @@ package reflect
 import (
 	"hamcrest"
 	"hamcrest/asserter"
-	//"reflect"
-	//"runtime"
+	"hamcrest/core"
 	"testing"
 )
 
-var Anything = hamcrest.Anything
-var Is = hamcrest.Is
-var Not = hamcrest.Not
-
+var Matched = hamcrest.Matched()
+var DidNotMatch = hamcrest.DidNotMatch()
+var Is = core.Is
+var Not = core.Not
 
 func Test_SameTypeAs(t *testing.T) {
 	we := asserter.Using(t)
 	
-	we.CheckThat(true, Is(SameTypeAs(false)))
-	we.CheckThat(false, Is(SameTypeAs(true)))
-	we.CheckThat(1, Is(SameTypeAs(2)))
-	we.CheckThat(int(1), Is(Not(SameTypeAs(uint(1)))))
+	we.CheckThat(SameTypeAs(false).Match(true), Matched)
+	we.CheckThat(SameTypeAs(true).Match(false), Matched)
+
+	we.CheckThat(SameTypeAs(2).Match(1), Matched)
+	we.CheckThat(SameTypeAs(int(2)).Match(uint(1)), DidNotMatch)
 }
 
 func Test_Bool_And_BoolType(t *testing.T) {
 	we := asserter.Using(t)
 	checkMatch := func(v interface{}) {
-		we.CheckThat(v, Is(Bool()))
-		we.CheckThat(v, ToType(Is(BoolType())))
+		we.CheckThat(Bool().Match(v), Matched)
+		we.CheckThat(ToType(Is(BoolType())).Match(v), Matched)
 	}
 	checkNonMatch := func(v interface{}) {
-		we.CheckThat(v, Is(Not(Bool())))
-		we.CheckThat(v, ToType(Is(Not(BoolType()))))
+		we.CheckThat(Bool().Match(v), DidNotMatch)
+		we.CheckThat(ToType(Is(BoolType())).Match(v), DidNotMatch)
 	}
 	checkMatch(true)
 	checkNonMatch("true")
@@ -233,70 +233,87 @@ func Test_String(t *testing.T) {
 	checkNonMatch(interface{}(nil))
 }
 
+func Test_ArrayOf(t *testing.T) {
+	we := asserter.Using(t)
+	boolArray := [2]bool {true, false}
+	intArray := [3]int {1, 2, 3}
+	intArrayArray := [2][3]int { {1, 2, 3}, {4, 5, 6} }
+	
+	we.CheckThat(boolArray, Is(ArrayOf(core.Anything())))
+	we.CheckThat(intArray, Is(ArrayOf(core.Anything())))
+	we.CheckThat(intArrayArray, Is(ArrayOf(core.Anything())))
+	
+	we.CheckThat(boolArray, Is(ArrayOf(BoolType())))
+	we.CheckThat(boolArray, ToType(Is(ArrayTypeOf(BoolType()))))
+	
+	we.CheckThat(intArray, Is(Not(ArrayOf(BoolType()))))
+	we.CheckThat(intArray, Is(ArrayOf(IntType())))
+	
+	we.CheckThat(intArrayArray, Is(Not(ArrayOf(IntType()))))
+	we.CheckThat(intArrayArray, Is(Not(ArrayOf(ArrayOf(IntType())))))
+	
+	intSlice := make([]int, 0, 1)
+	we.CheckThat(intSlice, Is(Not(ArrayOf(core.Anything()))))
+}
+
 func Test_ArrayTypeOf(t *testing.T) {
 	we := asserter.Using(t)
 	boolArray := [2]bool {true, false}
 	intArray := [3]int {1, 2, 3}
 	intArrayArray := [2][3]int { {1, 2, 3}, {4, 5, 6} }
 	
-	we.CheckThat(boolArray, Is(ArrayOf(Anything())))
-	we.CheckThat(boolArray, Is(ArrayOf(BoolType())))
-	we.CheckThat(boolArray, Is(Not(ArrayOf(IntType()))))
-	we.CheckThat(boolArray, ToType(Is(ArrayTypeOf(Anything()))))
+	we.CheckThat(boolArray, ToType(Is(ArrayTypeOf(core.Anything()))))
+	we.CheckThat(intArray, ToType(Is(ArrayTypeOf(core.Anything()))))
+	we.CheckThat(intArrayArray, ToType(Is(ArrayTypeOf(core.Anything()))))
+	
 	we.CheckThat(boolArray, ToType(Is(ArrayTypeOf(BoolType()))))
 	we.CheckThat(boolArray, ToType(Is(Not(ArrayTypeOf(IntType())))))
 	
-	we.CheckThat(intArray, Is(ArrayOf(Anything())))
-	we.CheckThat(intArray, Is(Not(ArrayOf(BoolType()))))
-	we.CheckThat(intArray, Is(ArrayOf(IntType())))
-	we.CheckThat(intArray, ToType(Is(ArrayTypeOf(Anything()))))
 	we.CheckThat(intArray, ToType(Is(Not(ArrayTypeOf(BoolType())))))
 	we.CheckThat(intArray, ToType(Is(ArrayTypeOf(IntType()))))
 	
-	we.CheckThat(intArrayArray, Is(ArrayOf(Anything())))
-	we.CheckThat(intArrayArray, Is(Not(ArrayOf(IntType()))))
-	we.CheckThat(intArrayArray, Is(Not(ArrayOf(ArrayOf(IntType())))))
 	we.CheckThat(intArrayArray, Is(Not(ArrayTypeOf(ArrayOf(IntType())))))
 	we.CheckThat(intArrayArray, Is(ArrayOf(ArrayTypeOf(IntType()))))
-	we.CheckThat(intArrayArray, ToType(Is(Not(ArrayOf(Anything())))))
 	we.CheckThat(intArrayArray, ToType(Is(ArrayTypeOf(ArrayTypeOf(IntType())))))
 	
 	intSlice := make([]int, 0, 1)
-	we.CheckThat(intSlice, Is(Not(ArrayOf(Anything()))))
+	we.CheckThat(intSlice, ToType(Is(Not(ArrayTypeOf(core.Anything())))))
 }
 
 func Test_ChanOf(t *testing.T) {
 	we := asserter.Using(t)
+	intObj := 1
 	intChan := make(chan int, 1)
 	intChanIn := func(ch chan int) chan<- int { return ch }(intChan)
 	intChanOut := func(ch chan int) <-chan int { return ch }(intChan)
-	we.CheckThat(intChan, Is(ChannelOf(Anything())))
+	
+	we.CheckThat(intObj, Is(Not(ChannelOf(core.Anything()))))
+	
 	we.CheckThat(intChan, Is(ChannelOf(IntType())))
 	we.CheckThat(intChan, Is(Not(ChannelOf(StringType()))))
 	
-	we.CheckThat(intChanIn, Is(ChannelOf(Anything())))
 	we.CheckThat(intChanIn, Is(ChannelOf(IntType())))
 	we.CheckThat(intChanIn, Is(Not(ChannelOf(StringType()))))
 	
-	we.CheckThat(intChanOut, Is(ChannelOf(Anything())))
 	we.CheckThat(intChanOut, Is(ChannelOf(IntType())))
 	we.CheckThat(intChanOut, Is(Not(ChannelOf(StringType()))))
 }
 
 func Test_ChanTypeOf(t *testing.T) {
 	we := asserter.Using(t)
+	intObj := 1
 	intChan := make(chan int, 1)
 	intChanIn := func(ch chan int) chan<- int { return ch }(intChan)
 	intChanOut := func(ch chan int) <-chan int { return ch }(intChan)
-	we.CheckThat(intChan, ToType(Is(ChannelTypeOf(Anything()))))
+	
+	we.CheckThat(intObj, ToType(Is(Not(ChannelTypeOf(core.Anything())))))
+	
 	we.CheckThat(intChan, ToType(Is(ChannelTypeOf(IntType()))))
 	we.CheckThat(intChan, ToType(Is(Not(ChannelTypeOf(StringType())))))
 	
-	we.CheckThat(intChanIn, ToType(Is(ChannelTypeOf(Anything()))))
 	we.CheckThat(intChanIn, ToType(Is(ChannelTypeOf(IntType()))))
 	we.CheckThat(intChanIn, ToType(Is(Not(ChannelTypeOf(StringType())))))
 	
-	we.CheckThat(intChanOut, ToType(Is(ChannelTypeOf(Anything()))))
 	we.CheckThat(intChanOut, ToType(Is(ChannelTypeOf(IntType()))))
 	we.CheckThat(intChanOut, ToType(Is(Not(ChannelTypeOf(StringType())))))
 }
@@ -307,38 +324,31 @@ func Test_SliceTypeOf(t *testing.T) {
 	intSlice := make([]int, 0, 1)
 	intSliceSlice := make([][]int, 0, 1)
 	
-	we.CheckThat(boolSlice, Is(SliceOf(Anything())))
 	we.CheckThat(boolSlice, Is(SliceOf(BoolType())))
 	we.CheckThat(boolSlice, Is(Not(SliceOf(IntType()))))
-	we.CheckThat(boolSlice, ToType(Is(SliceTypeOf(Anything()))))
 	we.CheckThat(boolSlice, ToType(Is(SliceTypeOf(BoolType()))))
 	we.CheckThat(boolSlice, ToType(Is(Not(SliceTypeOf(IntType())))))
 	
-	we.CheckThat(intSlice, Is(SliceOf(Anything())))
 	we.CheckThat(intSlice, Is(Not(SliceOf(BoolType()))))
 	we.CheckThat(intSlice, Is(SliceOf(IntType())))
-	we.CheckThat(intSlice, ToType(Is(SliceTypeOf(Anything()))))
 	we.CheckThat(intSlice, ToType(Is(Not(SliceTypeOf(BoolType())))))
 	we.CheckThat(intSlice, ToType(Is(SliceTypeOf(IntType()))))
 	
-	we.CheckThat(intSliceSlice, Is(SliceOf(Anything())))
 	we.CheckThat(intSliceSlice, Is(Not(SliceOf(IntType()))))
 	we.CheckThat(intSliceSlice, Is(Not(SliceOf(SliceOf(IntType())))))
 	we.CheckThat(intSliceSlice, Is(Not(SliceTypeOf(SliceOf(IntType())))))
 	we.CheckThat(intSliceSlice, Is(SliceOf(SliceTypeOf(IntType()))))
-	we.CheckThat(intSliceSlice, ToType(Is(Not(SliceOf(Anything())))))
 	we.CheckThat(intSliceSlice, ToType(Is(SliceTypeOf(SliceTypeOf(IntType())))))
 	
 	var intArray = [3]int{1, 2, 3}
-	we.CheckThat(intArray, Is(Not(SliceOf(Anything()))))
-	we.CheckThat(intArray, ToType(Is(Not(SliceTypeOf(Anything())))))
+	we.CheckThat(intArray, Is(Not(SliceOf(core.Anything()))))
+	we.CheckThat(intArray, ToType(Is(Not(SliceTypeOf(core.Anything())))))
 }
 
 func Test_MapOf(t *testing.T) {
 	we := asserter.Using(t)
 	intStringMap := map[int]string{1: "one", 2: "two"}
 
-	we.CheckThat(intStringMap, Is(MapOf(Anything(), Anything())))
 	we.CheckThat(intStringMap, Is(MapOf(IntType(), StringType())))
 	we.CheckThat(intStringMap, Is(Not(MapOf(StringType(), StringType()))))
 	we.CheckThat(intStringMap, Is(Not(MapOf(IntType(), IntType()))))
@@ -349,7 +359,6 @@ func Test_MapTypeOf(t *testing.T) {
 	we := asserter.Using(t)
 	intStringMap := map[int]string{1: "one", 2: "two"}
 
-	we.CheckThat(intStringMap, ToType(Is(MapTypeOf(Anything(), Anything()))))
 	we.CheckThat(intStringMap, ToType(Is(MapTypeOf(IntType(), StringType()))))
 	we.CheckThat(intStringMap, ToType(Is(Not(MapTypeOf(StringType(), StringType())))))
 	we.CheckThat(intStringMap, ToType(Is(Not(MapTypeOf(IntType(), IntType())))))
@@ -362,17 +371,14 @@ func Test_PtrTypeTo(t *testing.T) {
 	intPtr := &intObj
 	intPtrPtr := &intPtr
 	
-	we.CheckThat(intObj, Is(Not(PtrTo(Anything()))))
+	we.CheckThat(intObj, Is(Not(PtrTo(core.Anything()))))
 
-	we.CheckThat(intPtr, Is(PtrTo(Anything())))
 	we.CheckThat(intPtr, Is(PtrTo(IntType())))
 	we.CheckThat(intPtr, Is(Not(PtrTo(StringType()))))
 
-	we.CheckThat(intPtr, ToType(Is(PtrTypeTo(Anything()))))
 	we.CheckThat(intPtr, ToType(Is(PtrTypeTo(IntType()))))
 	we.CheckThat(intPtr, ToType(Is(Not(PtrTypeTo(StringType())))))
 
-	we.CheckThat(intPtrPtr, ToType(Is(PtrTypeTo(Anything()))))
 	we.CheckThat(intPtrPtr, ToType(Is(Not(PtrTypeTo(IntType())))))
 	we.CheckThat(intPtrPtr, ToType(Is(PtrTypeTo(PtrTypeTo(IntType())))))
 }
