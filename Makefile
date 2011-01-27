@@ -14,44 +14,19 @@ DEPS=\
 	hamcrest/reflect \
 	hamcrest/strings \
 
-TARG=hamcrest_demo
 
-GOFILES=\
-	hamcrest_demo.go \
+.PHONY: all bench clean install nuke test
+all bench clean install nuke test: $(DEPS)
 
-include $(GOROOT)/src/Make.cmd
+all: TARGET=all
+bench: TARGET=bench
+clean: TARGET=clean
+nuke: TARGET=nuke
+test: TARGET=test
+install: TARGET=install
 
+$(DEPS): force
+	make -C $@ $(TARGET)
 
-all:
-	for dep in $(DEPS); do \
-		echo "Cleaning $${dep}" ; \
-		pushd $${dep} ; gomake clean ; gomake ; gomake install ; gotest ; popd ; \
-	done;
-
-clean:
-	for dep in $(DEPS); do \
-		echo "Cleaning $${dep}" ; \
-		pushd $${dep} ; gomake clean ; popd ; \
-	done;
-
-
-install:
-	for dep in $(DEPS); do \
-		echo "Installing $${dep}" ; \
-		pushd $${dep} ; gomake install ; popd ; \
-	done
-
-
-test:
-	for dep in $(DEPS); do \
-		echo "Testing $${dep}" ; \
-		pushd $${dep} ; gotest ; popd ; \
-	done
-
-
-uninstall:
-	for dep in $(DEPS); do \
-		echo "Uninstalling $${dep}" ; \
-		rm -rf $(GOROOT)/pkg/$(GOOS)_$(GOARCH)/"$${dep}".a ; \
-	done
-
+.PHONY: force
+force :;
