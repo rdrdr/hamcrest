@@ -6,7 +6,8 @@ include $(GOROOT)/src/Make.inc
 
 TARG=hamcrest
 GOFILES=\
-	defs.go\
-	matchers.go\
+	comparison.go \
+	defs.go \
+	matchers.go \
 	
 include $(GOROOT)/src/Make.pkg

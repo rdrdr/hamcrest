@@ -6,8 +6,8 @@ include $(GOROOT)/src/Make.inc
 
 DEPS=\
 	hamcrest \
-	hamcrest/core \
 	hamcrest/asserter \
+	hamcrest/core \
 	hamcrest/logic \
 	hamcrest/comparison \
 	hamcrest/collections \
