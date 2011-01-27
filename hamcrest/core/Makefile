@@ -6,6 +6,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=hamcrest/core
 GOFILES=\
+	comparison.go\
 	core.go\
 	
 include $(GOROOT)/src/Make.pkg

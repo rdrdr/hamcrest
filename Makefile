@@ -15,10 +15,9 @@ DEPS=\
 	hamcrest/strings \
 
 
-.PHONY: all bench clean install nuke test
-all bench clean install nuke test: $(DEPS)
+.PHONY: bench clean install nuke test
+bench clean install nuke test: $(DEPS)
 
-all: TARGET=all
 bench: TARGET=bench
 clean: TARGET=clean
 nuke: TARGET=nuke

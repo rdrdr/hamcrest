@@ -283,38 +283,3 @@ func (self *Matcher) Comment(comments... interface{}) *Matcher {
 	return &Matcher{description:self.description, match:self.match, comments:all}
 }
 
-
-// --------------------------------------------------------------------
-// Matchers
-// --------------------------------------------------------------------
-
-// Returns a Matcher that matches the boolean value true.
-func Matched() *Matcher {
-	return _Matched
-}
-var _Matched *Matcher // singleton
-func init() {
-	match := func (actual interface{}) *Result {
-		if result, ok := actual.(*Result); ok {
-			return NewResultf(result.Matched(), "was a result").WithCauses(result)
-		}
-		return NewResultf(false, "[%v] was not a result", actual)
-	}
-	_Matched = NewMatcherf(match, "Matched")
-}
-
-// Returns a Matcher that matches the boolean value false.
-func DidNotMatch() *Matcher {
-	return _DidNotMatch
-}
-var _DidNotMatch *Matcher // singleton
-func init() {
-	match := func (actual interface{}) *Result {
-		if result, ok := actual.(*Result); ok {
-			return NewResultf(!result.Matched(), "was a result").WithCauses(result)
-		}
-		return NewResultf(false, "[%v] was not a result", actual)
-	}
-	_DidNotMatch = NewMatcherf(match, "DidNotMatch")
-}
-

@@ -25,40 +25,13 @@ func init() {
 
 // Returns a Matcher that matches the boolean value true.
 func True() *hamcrest.Matcher {
-	return _True
-}
-var _True *hamcrest.Matcher // singleton
-func init() {
-	match := func (actual interface{}) *hamcrest.Result {
-		if b, ok := actual.(bool); ok {
-			if b {
-				return hamcrest.NewResultf(true, "was true")
-			}
-			return hamcrest.NewResultf(false, "was not true")
-		}
-		return hamcrest.NewResultf(false, "[%v] was not bool", actual)
-	}
-	_True = hamcrest.NewMatcherf(match, "True")
+	return hamcrest.True()
 }
 
 // Returns a Matcher that matches the boolean value false.
 func False() *hamcrest.Matcher {
-	return _False
+	return hamcrest.False()
 }
-var _False *hamcrest.Matcher // singleton
-func init() {
-	match := func (actual interface{}) *hamcrest.Result {
-		if b, ok := actual.(bool); ok {
-			if !b {
-				return hamcrest.NewResultf(true, "was false")
-			}
-			return hamcrest.NewResultf(false, "was not false")
-		}
-		return hamcrest.NewResultf(false, "[%v] was not bool", actual)
-	}
-	_False = hamcrest.NewMatcherf(match, "False")
-}
-
 
 // Returns a Matcher that matches on values that cause the given
 // functionOrMatcher to panic.
@@ -142,51 +115,19 @@ func Is(matcher *hamcrest.Matcher) *hamcrest.Matcher {
 }
 
 
-// Helper function for Nil/NonNil
-func _detectNil(actual interface{}) bool {
-	if actual == nil {
-		return true
-	}
-	if value, ok := reflect.NewValue(actual).(_CanAskIsNil); ok {
-		return value.IsNil()
-	}
-	return false
-}
-type _CanAskIsNil interface { IsNil() bool }
-
-
 // Returns a Matcher that matches if the actual value is nil
 // or the nil value of its type.  (Note that this is *not*
 // equivalent to DeeplyEqualTo(nil).)
 func Nil() *hamcrest.Matcher {
-	return _Nil
+	return hamcrest.Nil()
 }
-var _Nil *hamcrest.Matcher // singleton
-func init() {
-	match := func (actual interface{}) *hamcrest.Result {
-		if _detectNil(actual) {
-			return hamcrest.NewResultf(true, "was nil")
-		}
-		return hamcrest.NewResultf(false, "[%v] was not nil", actual)
-	}
-	_Nil = hamcrest.NewMatcherf(match, "Nil")
-}
+
 
 // Returns a Matcher that matches if the actual value is 
 // neither nil nor the nil value of its type.  (Note that
 // this is *not* equivalent to Not(DeeplyEqualTo(nil)).)
 func NonNil() *hamcrest.Matcher {
-	return _NonNil
-}
-var _NonNil *hamcrest.Matcher
-func init() {
-	match := func (actual interface{}) *hamcrest.Result {
-		if _detectNil(actual) {
-			return hamcrest.NewResultf(false, "was nil")
-		}
-		return hamcrest.NewResultf(true, "[%v] was not nil", actual)
-	}
-	_NonNil = hamcrest.NewMatcherf(match, "NonNil")
+	return hamcrest.NonNil()
 }
 
 
@@ -196,15 +137,7 @@ func init() {
 // For an equality test equivalent to `==`, see the
 // `hamcrest/comparison` package.
 func DeeplyEqualTo(expected interface{}) *hamcrest.Matcher {
-	match := func (actual interface{}) *hamcrest.Result {
-		if reflect.DeepEqual(expected, actual) {
-			return hamcrest.NewResultf(true,
-				"was deeply equal to [%v]", expected)
-		}
-		return hamcrest.NewResultf(false,
-			"[%v] was not deeply equal to [%v]", actual, expected)
-	}
-	return hamcrest.NewMatcherf(match, "DeeplyEqualTo[%v]", expected)
+	return hamcrest.DeepEqualTo(expected)
 }
 
 
