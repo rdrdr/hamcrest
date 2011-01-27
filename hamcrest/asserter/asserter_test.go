@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 	"hamcrest"
-	"hamcrest/core"
 )
 
 func newBuffer() *bytes.Buffer{
@@ -118,7 +117,7 @@ func Test_LogUnless_onNonMatchingResult(t *testing.T) {
 func Test_FailWhen_onNonMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)
-	asserter.FailWhen(false, core.True())
+	asserter.FailWhen(false, hamcrest.True())
 	checkBufferIsEmpty(t, buffer)
 	checkAsserterDidNotFail(t, asserter)
 }

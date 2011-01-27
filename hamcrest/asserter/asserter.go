@@ -11,11 +11,6 @@ import (
 	"hamcrest"
 )
 
-var _True = hamcrest.True()
-var _False = hamcrest.False()
-var _Nil = hamcrest.Nil()
-var _NonNil = hamcrest.NonNil()
-
 
 // Used by an Asserter to write log/error messages.
 //
@@ -273,19 +268,19 @@ func (self *_Asserter) CheckThat(value interface{}, matcher *hamcrest.Matcher) {
 }
 
 func (self *_Asserter) CheckTrue(value bool, comments ...interface{}) {
-	self.CheckThat(value, _True.Comment(comments...))
+	self.CheckThat(value, hamcrest.True().Comment(comments...))
 }
 
 func (self *_Asserter) CheckFalse(value bool, comments ...interface{}) {
-	self.CheckThat(value, _False.Comment(comments...))
+	self.CheckThat(value, hamcrest.False().Comment(comments...))
 }
 
 func (self *_Asserter) CheckNil(value interface{}, comments ...interface{}) {
-	self.CheckThat(value, _Nil.Comment(comments...))
+	self.CheckThat(value, hamcrest.Nil().Comment(comments...))
 }
 
 func (self *_Asserter) CheckNonNil(value interface{}, comments ...interface{}) {
-	self.CheckThat(value, _NonNil.Comment(comments...))
+	self.CheckThat(value, hamcrest.NonNil().Comment(comments...))
 }
 
 func (self *_Asserter) AssertThat(value interface{}, matcher *hamcrest.Matcher) {
@@ -293,17 +288,17 @@ func (self *_Asserter) AssertThat(value interface{}, matcher *hamcrest.Matcher) 
 }
 
 func (self *_Asserter) AssertTrue(value bool, comments ...interface{}) {
-	self.AssertThat(value, _True.Comment(comments...))
+	self.AssertThat(value, hamcrest.True().Comment(comments...))
 }
 
 func (self *_Asserter) AssertFalse(value bool, comments ...interface{}) {
-	self.AssertThat(value, _False.Comment(comments...))
+	self.AssertThat(value, hamcrest.False().Comment(comments...))
 }
 
 func (self *_Asserter) AssertNil(value interface{}, comments ...interface{}) {
-	self.AssertThat(value, _Nil.Comment(comments...))
+	self.AssertThat(value, hamcrest.Nil().Comment(comments...))
 }
 
 func (self *_Asserter) AssertNonNil(value interface{}, comments ...interface{}) {
-	self.AssertThat(value, _NonNil.Comment(comments...))
+	self.AssertThat(value, hamcrest.NonNil().Comment(comments...))
 }
