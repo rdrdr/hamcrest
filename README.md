@@ -214,25 +214,16 @@ common ones.
   * `If(m1).Then(m2)` - checks that whenever `m1` matches, so does `m2`
   * `IfAndOnlyIf(m1).Then(m2)` - checks that `m1` and `m2` both match/don't match.
 
-  * `EqualTo(obj)` - matches any object `x`
-        where `x == obj` is legal and true
-  * `NotEqualTo(obj)` - matches any object `x`
-        where `x != obj` is legal and true
-  * `DeepEqualTo(obj)` - matches any object `x`
-        where `reflect.DeepEquals(x, obj)` is true
-  * `GreaterThan(obj)` - matches any object `x`
-        where `x > obj` is legal and true
-  * `GreaterThanOrEqualTo(obj)` - matches any object `x`
-        where `x <= obj` is legal and true
-  * `LessThan(obj)` - matches any object `x`
-        where `x < obj` is legal and true
-  * `LessThanOrEqualTo(obj)` - matches any object `x`
-        where `x <= obj` is legal and true
+  * `EqualTo(y)` - matches any value `x` where `x == y` is legal and true
+  * `NotEqualTo(y)` - matches any value `x` where `x != y` is legal and true
+  * `DeepEqualTo(y)` - matches any value `x` where `reflect.DeepEquals(x, y)` is true
+  * `GreaterThan(y)` - matches any value `x` where `x > y` is legal and true
+  * `GreaterThanOrEqualTo(y)` - matches any value `x` where `x <= y` is legal and true
+  * `LessThan(y)` - matches any value `x` where `x < y` is legal and true
+  * `LessThanOrEqualTo(y)` - matches any value `x` where `x <= y` is legal and true
   
-  * `Nil` - matches objects of any type with an `IsNil()` method that
-        returns true for the given object
-  * `NonNil` - matches objects of any type with an `IsNil()` method that
-        returns false for the given object
+  * `Nil` - matches values of any type with an `IsNil() bool` method that returns true for the given object
+  * `NonNil` - matches values of any type with an `IsNil() bool` method that returns false for the given object
   
   * `AnyOf(matchers...)` - short-circuiting n-ary logical Or
   * `AllOf(matchers...)` - short-circuiting n-ary logical And
