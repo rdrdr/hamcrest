@@ -139,6 +139,10 @@ func Test_ExtractPattern_Each(t *testing.T) {
 		ExtractPattern("duck+").Each(EqualTo("duck")))
 	we.CheckThat("duck duckkkk goose",
 		Not(ExtractPattern("duck+").Each(EqualTo("duck"))))
+	
+	i_before_e := ExtractPattern("[^aeiou]ei").Each(HasPrefix("c"))
+	we.CheckThat("ceiling receipt", i_before_e)
+	we.CheckThat("deceiver seizure", Not(i_before_e))
 }
 
 func Test_ExtractPattern_Any(t *testing.T) {
@@ -150,5 +154,9 @@ func Test_ExtractPattern_Any(t *testing.T) {
 		ExtractPattern("duck+").Any(EqualTo("duck")))
 	we.CheckThat("duckkkk duck goose",
 		ExtractPattern("duck+").Any(EqualTo("duck")))
+	
+	has_cat_word := ExtractPattern("[a-z]+at").Any(HasPrefix("c"))
+	we.CheckThat("that cravat is phat", has_cat_word)
+	we.CheckThat("Matt spat at a rat", Not(has_cat_word))
 }
 

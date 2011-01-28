@@ -209,7 +209,7 @@ func ExtractPattern(pattern string) *ExtractPatternClause {
 // Completes a matcher that finds every occurrence of a pattern in the
 // given input and applies the matcher to it, only matching if every
 // occurrence matches.  For example:
-//    i_before_e_except := ToLower(ExtractPattern(".ei").Each(StartsWith("c")))
+//    i_before_e_except := ToLower(ExtractPattern(".ei").Each(HasPrefix("c")))
 // will match:
 //    "ceiling receipt"
 // but not:
@@ -241,9 +241,9 @@ func (self *ExtractPatternClause) Each(matcher *base.Matcher) *base.Matcher {
 // Completes a matcher that finds every occurrence of a pattern in the
 // given input and applies the matcher to it, only matching if at least
 // one occurrence matches.  For example:
-//    here_kitty := ExtractPattern(".at").Any(StartsWith("c"))
+//    here_kitty := ExtractPattern("[a-z]+at").Any(HasPrefix("c"))
 // will match:
-//    "that cat is phat"
+//    "that cravat is phat"
 // but not:
 //    "Matt spat at a rat"
 func (self *ExtractPatternClause) Any(matcher *base.Matcher) *base.Matcher {
