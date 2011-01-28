@@ -11,7 +11,6 @@ DEPS=\
 	$(PREFIX)/asserter \
 	$(PREFIX)/core \
 	$(PREFIX)/logic \
-	$(PREFIX)/comparison \
 	$(PREFIX)/collections \
 	$(PREFIX)/reflect \
 	$(PREFIX)/strings \

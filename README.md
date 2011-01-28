@@ -17,7 +17,8 @@ Packages
 `hamcrest.go` comes in several packages that you assemble to fit your needs:
 
 *   `hamcrest/base`:  Defines the types `Matcher`, `Result` and `SelfDescribing`
-    and provides factory functions to create them.
+    and provides factory functions to create them.  (Unless you want to define
+    your own custom Matchers, you'll only use this indirectly.)
 
 *   `hamcrest/core`:  Defines a set of Matchers for doing basic comparisons,
     equality testing, nil checking, and grouping/composition matchers.
@@ -47,28 +48,47 @@ Example of using Hamcrest at runtime:
 
 Create an `Asserter`.  The simplest way to do this is with the factory
 method `UsingStderr()`, which returns an `Asserter` that logs problems to
-stderr and calls `panic` on `FailNow`.  Use that asserter during init()
-to make sure globals are properly initialized:
+stderr and calls `panic` on `FailNow`:
 
 	import (
 		"github.com/rdrdr/hamcrest/asserter"
+	)
+	
+	var we = asserter.UsingStderr()
+
+Use that asserter during init() to make sure globals are properly
+initialized:
+
+	import (
+		"github.com/rdrdr/hamcrest/asserter"
+		"github.com/rdrdr/hamcrest/collections"
 		"github.com/rdrdr/hamcrest/core"
 		"github.com/rdrdr/hamcrest/strings"
 	)
+	var we = asserter.UsingStderr()
 	
-	var hostnames = []string { "news.foo.com", "news.bar.com" }
-
-	func init() {
-		IsInOneOfOurDomains := core.AnyOf(strings.EndsWith(".foo.com"),
-		                                  strings.EndsWith(".bar.com"))
-		
-		var we = asserter.UsingStderr()
-		for _ , hostname := range hostnames {
-			we.FailNowUnless(hostname, IsInOneOfOurDomains)
-		}
+	type Server struct {
+		hostname string
+		port uint16
+	}
+	var servers = []Server {
+		{ "news.foo.com", 8000 },
+		{ "news.bar.com", 8888 },
 	}
 
-Or use the `we` asserter at runtime to guarantee that a method's
+	func init() {
+		EveryElement := collections.EveryElement
+		ToHostname := core.Applying(func(s Server) string {
+			return s.hostname
+		}, "ToHostname")
+		IsInOneOfOurDomains := core.AnyOf(strings.HasSuffix(".foo.com"),
+		                                  strings.HasSuffix(".bar.com"))
+		
+		we.FailNowUnless(servers,
+			EveryElement(ToHostname(IsInOneOfOurDomains)))
+	}
+
+Or use the asserter at runtime to guarantee that a method's
 preconditions are met:
 
 	func WriteTo(filename string) bool {
@@ -85,8 +105,9 @@ Or use it during development to write your tests in the same file as your code:
 	
 	func init() {
 		we := asserter.UsingStderr()
-		we.AssertThat(PigLatin("easier"), EqualTo("easier-ay"))
 		we.AssertThat(PigLatin("testing"), EqualTo("esting-tay"))
+		we.AssertThat(PigLatin("made"), EqualTo("ade-may"))
+		we.AssertThat(PigLatin("easier"), EqualTo("easier-ay"))
 	}
 	
 This makes it easy to cut-and-paste each `init()` block into your

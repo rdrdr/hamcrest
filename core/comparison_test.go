@@ -2,15 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package comparison
+package core
 
 import (
 	"github.com/rdrdr/hamcrest/asserter"
-	"github.com/rdrdr/hamcrest/core"
 	"testing"
 )
-
-var Not = core.Not
 
 func Test_GreaterThan(t *testing.T) {
 	we := asserter.Using(t)

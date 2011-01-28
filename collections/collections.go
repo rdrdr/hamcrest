@@ -14,6 +14,11 @@ type _ElemAndLen interface {
 	Len() int
 }
 
+// Returns a matcher that matches on any array or slice input value
+// if the given matcher matches at least one element of that array
+// or slice.
+//
+// The returned matcher does not match any non-array-or-slice value.
 func AnyElement(matcher *base.Matcher) *base.Matcher {
 	match := func(actual interface{}) *base.Result {
 		v := reflect.NewValue(actual)
