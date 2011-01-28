@@ -5,20 +5,12 @@
 package collections
 
 import (
-	"hamcrest/asserter"
-	"hamcrest/comparison"
-	"hamcrest/core"
+	"github.com/rdrdr/hamcrest/asserter"
+	. "github.com/rdrdr/hamcrest/core"
 	//"reflect"
 	//"runtime"
 	"testing"
 )
-
-var Is = core.Is
-var Not = core.Not
-var Anything = core.Anything
-var EqualTo = comparison.EqualTo
-var LessThan = comparison.LessThan
-var GreaterThan = comparison.GreaterThan
 
 func Test_AnyElement_ofArray(t *testing.T) {
 	we := asserter.Using(t)

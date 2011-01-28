@@ -4,7 +4,7 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=hamcrest/logic
+TARG=github.com/rdrdr/hamcrest/logic
 GOFILES=\
 	logic.go\
 	

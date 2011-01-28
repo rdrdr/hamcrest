@@ -4,7 +4,7 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=hamcrest/core
+TARG=github.com/rdrdr/hamcrest/core
 GOFILES=\
 	core.go\
 	

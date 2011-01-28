@@ -5,24 +5,19 @@
 package logic
 
 import (
-	"hamcrest"
-	"hamcrest/core"
+	"github.com/rdrdr/hamcrest/base"
+	. "github.com/rdrdr/hamcrest/core"
 	"reflect"
 	"testing"
 )
 
-var Anything = core.Anything
-var True = core.True
-var False = core.False
-var Not = core.Not
-
-func checkResultIsMatching(t *testing.T, result *hamcrest.Result, message string) {
+func checkResultIsMatching(t *testing.T, result *base.Result, message string) {
 	if !result.Matched() {
 		t.Errorf("Expected matching result, was [%v] %v", result, message)
 	}
 }
 
-func checkResultIsNonMatching(t *testing.T, result *hamcrest.Result, message string) {
+func checkResultIsNonMatching(t *testing.T, result *base.Result, message string) {
 	if result.Matched() {
 		t.Errorf("Expected non-matching result, was [%v] %v", result, message)
 	}
@@ -39,7 +34,7 @@ var uninitialized struct {
 	_interface interface{}
 }
 
-func checkMatcherIsMatchingOnNils(t *testing.T, matcher *hamcrest.Matcher) {
+func checkMatcherIsMatchingOnNils(t *testing.T, matcher *base.Matcher) {
 	checkResultIsMatching(t, matcher.Match(nil), "nil")
 	checkResultIsMatching(t, matcher.Match(uninitialized._pointer), "uninitialized pointer")
 	checkResultIsMatching(t, matcher.Match(uninitialized._func), "uninitialized func")
@@ -49,7 +44,7 @@ func checkMatcherIsMatchingOnNils(t *testing.T, matcher *hamcrest.Matcher) {
 	checkResultIsMatching(t, matcher.Match(uninitialized._interface), "uninitialized interface")
 }
 
-func checkMatcherIsNonMatchingOnNils(t *testing.T, matcher *hamcrest.Matcher) {
+func checkMatcherIsNonMatchingOnNils(t *testing.T, matcher *base.Matcher) {
 	checkResultIsNonMatching(t, matcher.Match(nil), "nil")
 	checkResultIsNonMatching(t, matcher.Match(uninitialized._pointer), "uninitialized pointer")
 	checkResultIsNonMatching(t, matcher.Match(uninitialized._func), "uninitialized func")
@@ -59,7 +54,7 @@ func checkMatcherIsNonMatchingOnNils(t *testing.T, matcher *hamcrest.Matcher) {
 	checkResultIsNonMatching(t, matcher.Match(uninitialized._interface), "uninitialized interface")
 }
 
-func logSamples(t *testing.T, matcher *hamcrest.Matcher) {
+func logSamples(t *testing.T, matcher *base.Matcher) {
 	t.Logf("Sample results for: %v\n", matcher)
 	t.Logf("\ton true: %v\n", matcher.Match(true))
 	t.Logf("\ton false: %v\n", matcher.Match(false))
@@ -90,9 +85,9 @@ func logSamples(t *testing.T, matcher *hamcrest.Matcher) {
 func Test_BothAnd(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
+	snoop := base.NewMatcherf(func(v interface{}) *base.Result {
 			calledSnoop = true
-			return hamcrest.NewResultf(false, "snooped!")
+			return base.NewResultf(false, "snooped!")
 		}, "Snoop")
 	
 	if result := Both(yes).And(yes).Match(0); !result.Matched() {
@@ -117,9 +112,9 @@ func Test_BothAnd(t *testing.T) {
 func Test_EitherOr(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
+	snoop := base.NewMatcherf(func(v interface{}) *base.Result {
 			calledSnoop = true
-			return hamcrest.NewResultf(false, "snooped!")
+			return base.NewResultf(false, "snooped!")
 		}, "Snoop")
 	
 	if result := Either(no).Or(no).Match(0); result.Matched() {
@@ -164,9 +159,9 @@ func Test_EitherXor(t *testing.T) {
 func Test_NeitherNor(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
+	snoop := base.NewMatcherf(func(v interface{}) *base.Result {
 			calledSnoop = true
-			return hamcrest.NewResultf(false, "snooped!")
+			return base.NewResultf(false, "snooped!")
 		}, "Snoop")
 	
 	if result := Neither(no).Nor(no).Match(0); !result.Matched() {
@@ -191,9 +186,9 @@ func Test_NeitherNor(t *testing.T) {
 func Test_IfThen(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
+	snoop := base.NewMatcherf(func(v interface{}) *base.Result {
 			calledSnoop = true
-			return hamcrest.NewResultf(false, "snooped!")
+			return base.NewResultf(false, "snooped!")
 		}, "Snoop")
 	
 	if result := If(yes).Then(yes).Match(0); !result.Matched() {

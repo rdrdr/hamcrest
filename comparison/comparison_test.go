@@ -5,8 +5,8 @@
 package comparison
 
 import (
-	"hamcrest/asserter"
-	"hamcrest/core"
+	"github.com/rdrdr/hamcrest/asserter"
+	"github.com/rdrdr/hamcrest/core"
 	"testing"
 )
 

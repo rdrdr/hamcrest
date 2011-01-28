@@ -8,20 +8,20 @@ import (
 	"bytes"
 	"strings"
 	"testing"
-	"hamcrest"
+	"github.com/rdrdr/hamcrest/base"
 )
 
 func newBuffer() *bytes.Buffer{
 	return bytes.NewBuffer(make([]byte, 0, 1000))
 }
 
-func checkResultIsMatching(t *testing.T, result *hamcrest.Result, message string) {
+func checkResultIsMatching(t *testing.T, result *base.Result, message string) {
 	if !result.Matched() {
 		t.Errorf("Expected matching result, was [%v] %v", result, message)
 	}
 }
 
-func checkResultIsNonMatching(t *testing.T, result *hamcrest.Result, message string) {
+func checkResultIsNonMatching(t *testing.T, result *base.Result, message string) {
 	if result.Matched() {
 		t.Errorf("Expected non-matching result, was [%v] %v", result, message)
 	}
@@ -77,12 +77,12 @@ var MATCHER_DESCRIPTION = "matcher_message"
 var MATCHER_COMMENT1 = "matcher_message_1_with_%v" // catch accidental expansion
 var MATCHER_COMMENT2 = 2
 var MATCHER_COMMENTS = []string{ MATCHER_COMMENT1, "2" }
-var MATCHER = hamcrest.NewMatcherf(
-	func (actual interface{}) *hamcrest.Result {
+var MATCHER = base.NewMatcherf(
+	func (actual interface{}) *base.Result {
 		if actual == MATCHING_VALUE {
-			return hamcrest.NewResultf(true, MATCHING_RESULT)
+			return base.NewResultf(true, MATCHING_RESULT)
 		}
-		return hamcrest.NewResultf(false, NONMATCHING_RESULT)
+		return base.NewResultf(false, NONMATCHING_RESULT)
 	}, MATCHER_DESCRIPTION).Comment(MATCHER_COMMENT1, MATCHER_COMMENT2)
 
 func Test_LogWhen_onNonMatchingResult(t *testing.T) {
@@ -117,7 +117,7 @@ func Test_LogUnless_onNonMatchingResult(t *testing.T) {
 func Test_FailWhen_onNonMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)
-	asserter.FailWhen(false, hamcrest.True())
+	asserter.FailWhen(false, base.True())
 	checkBufferIsEmpty(t, buffer)
 	checkAsserterDidNotFail(t, asserter)
 }
@@ -230,9 +230,9 @@ func Test_AssertThat(t *testing.T) {
 func Test_NullAsserter(t *testing.T) {
 	asserter := ThatDoesNothing()
 	snooped := false
-	snoopMatcher := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result { 
+	snoopMatcher := base.NewMatcherf(func(v interface{}) *base.Result { 
 			snooped = true
-			return hamcrest.NewResultf(true, "snooped!")
+			return base.NewResultf(true, "snooped!")
 		}, "Snoop")
 	asserter.AssertThat("x", snoopMatcher)
 	if snooped {

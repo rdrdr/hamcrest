@@ -4,7 +4,7 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=hamcrest/comparison
+TARG=github.com/rdrdr/hamcrest/comparison
 GOFILES=\
 	comparison.go\
 	

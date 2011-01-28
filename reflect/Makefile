@@ -4,7 +4,7 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=hamcrest/reflect
+TARG=github.com/rdrdr/hamcrest/reflect
 GOFILES=\
 	reflect.go\
 	

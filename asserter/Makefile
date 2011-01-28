@@ -4,7 +4,7 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=hamcrest/asserter
+TARG=github.com/rdrdr/hamcrest/asserter
 GOFILES=\
 	asserter.go\
 	

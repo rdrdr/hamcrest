@@ -5,13 +5,13 @@
 package core
 
 import (
-	"hamcrest"
+	"github.com/rdrdr/hamcrest/base"
 	"fmt"
 	"reflect"
 	"testing"
 )
 
-func _LogResult(t *testing.T, indent string, result *hamcrest.Result) {
+func _LogResult(t *testing.T, indent string, result *base.Result) {
 	s := "Matched"
 	if !result.Matched() {
 		s = "Nonmatch"
@@ -23,7 +23,7 @@ func _LogResult(t *testing.T, indent string, result *hamcrest.Result) {
 	}
 }
 
-func checkResultIsMatching(t *testing.T, result *hamcrest.Result, message string) {
+func checkResultIsMatching(t *testing.T, result *base.Result, message string) {
 	if !result.Matched() {
 		t.Errorf("Expected matching result from applying %v to %#v, was [%v] %v",
 			result.Matcher(), result.Value(), result, message)
@@ -31,7 +31,7 @@ func checkResultIsMatching(t *testing.T, result *hamcrest.Result, message string
 	_LogResult(t, "", result)
 }
 
-func checkResultIsNonMatching(t *testing.T, result *hamcrest.Result, message string) {
+func checkResultIsNonMatching(t *testing.T, result *base.Result, message string) {
 	if result.Matched() {
 		t.Errorf("Expected non-matching result from applying %v to %#v, was [%v].  Message: %v",
 			result.Matcher(), result.Value(), result, message)
@@ -50,7 +50,7 @@ var uninitialized struct {
 	_interface interface{}
 }
 
-func checkMatcherIsMatchingOnNils(t *testing.T, matcher *hamcrest.Matcher) {
+func checkMatcherIsMatchingOnNils(t *testing.T, matcher *base.Matcher) {
 	checkResultIsMatching(t, matcher.Match(nil), "nil")
 	checkResultIsMatching(t, matcher.Match(uninitialized._pointer), "uninitialized pointer")
 	checkResultIsMatching(t, matcher.Match(uninitialized._func), "uninitialized func")
@@ -60,7 +60,7 @@ func checkMatcherIsMatchingOnNils(t *testing.T, matcher *hamcrest.Matcher) {
 	checkResultIsMatching(t, matcher.Match(uninitialized._interface), "uninitialized interface")
 }
 
-func checkMatcherIsNonMatchingOnNils(t *testing.T, matcher *hamcrest.Matcher) {
+func checkMatcherIsNonMatchingOnNils(t *testing.T, matcher *base.Matcher) {
 	checkResultIsNonMatching(t, matcher.Match(nil), "nil")
 	checkResultIsNonMatching(t, matcher.Match(uninitialized._pointer), "uninitialized pointer")
 	checkResultIsNonMatching(t, matcher.Match(uninitialized._func), "uninitialized func")
@@ -70,7 +70,7 @@ func checkMatcherIsNonMatchingOnNils(t *testing.T, matcher *hamcrest.Matcher) {
 	checkResultIsNonMatching(t, matcher.Match(uninitialized._interface), "uninitialized interface")
 }
 
-func logSamples(t *testing.T, matcher *hamcrest.Matcher) {
+func logSamples(t *testing.T, matcher *base.Matcher) {
 	t.Logf("Sample results for: %v\n", matcher)
 	t.Logf("\ton true: %v\n", matcher.Match(true))
 	t.Logf("\ton false: %v\n", matcher.Match(false))
@@ -164,8 +164,8 @@ func Test_NonNil(t *testing.T) {
 	logSamples(t, matcher)
 }
 
-type _DeeplyEqualsType struct { x int }
-func Test_DeeplyEqualTo(t *testing.T) {
+type _DeepEqualType struct { x int }
+func Test_DeepEqualTo(t *testing.T) {
 	data := []interface{} {
 		nil, true, false,
 		int(42), uint(42), float(42), complex(42),
@@ -173,8 +173,8 @@ func Test_DeeplyEqualTo(t *testing.T) {
 		struct { x int } { x: 42 },
 		&struct { x int } { x: 42 },
 		struct { y int } { y: 42 },
-		_DeeplyEqualsType { x: 42 },
-		&_DeeplyEqualsType { x: 42 },
+		_DeepEqualType { x: 42 },
+		&_DeepEqualType { x: 42 },
 		[]int { 42 },
 		[]int { 42 },
 		map[int]int{ 42: 42 },
@@ -183,7 +183,7 @@ func Test_DeeplyEqualTo(t *testing.T) {
 		make(chan int, 42),
 	}
 	for _, x := range data {
-		matcher := DeeplyEqualTo(x)
+		matcher := DeepEqualTo(x)
 		for _, y := range data {
 			message := fmt.Sprintf("%T[%v] and %T[%v]", x, x, y, y)
 			if reflect.DeepEqual(x, y) {
@@ -193,15 +193,15 @@ func Test_DeeplyEqualTo(t *testing.T) {
 			}
 		}
 	}
-	logSamples(t, DeeplyEqualTo(42))
+	logSamples(t, DeepEqualTo(42))
 }
 
 func Test_AllOf(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
+	snoop := base.NewMatcherf(func(v interface{}) *base.Result {
 			calledSnoop = true
-			return hamcrest.NewResultf(false, "snooped!")
+			return base.NewResultf(false, "snooped!")
 		}, "Snoop")
 	checkResultIsMatching(t, AllOf(yes, yes, yes).Match(true), "all yes")
 	checkResultIsNonMatching(t, AllOf(yes, yes, no).Match(false), "not all yes")
@@ -210,15 +210,15 @@ func Test_AllOf(t *testing.T) {
 	if calledSnoop {
 		t.Errorf("AllOf should short-circuit before calling snoop")
 	}
-	logSamples(t, AllOf(Anything(), NonNil(), DeeplyEqualTo(42)))
+	logSamples(t, AllOf(Anything(), NonNil(), DeepEqualTo(42)))
 }
 
 func Test_AnyOf(t *testing.T) {
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
-	snoop := hamcrest.NewMatcherf(func(v interface{}) *hamcrest.Result {
+	snoop := base.NewMatcherf(func(v interface{}) *base.Result {
 			calledSnoop = true
-			return hamcrest.NewResultf(false, "snooped!")
+			return base.NewResultf(false, "snooped!")
 		}, "Snoop")
 	checkResultIsNonMatching(t, AnyOf(no, no, no).Match(true), "all no")
 	checkResultIsMatching(t, AnyOf(no, no, yes).Match(false), "one yes")
@@ -227,7 +227,7 @@ func Test_AnyOf(t *testing.T) {
 	if calledSnoop {
 		t.Errorf("AnyOf should short-circuit before calling snoop")
 	}
-	logSamples(t, AnyOf(True(), Nil(), DeeplyEqualTo(42)))
+	logSamples(t, AnyOf(True(), Nil(), DeepEqualTo(42)))
 }
 
 func Test_Applying_onFunction_FromType_ToType(t *testing.T) {

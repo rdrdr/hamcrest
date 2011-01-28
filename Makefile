@@ -4,10 +4,31 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=hamcrest
-GOFILES=\
-	comparison.go \
-	defs.go \
-	matchers.go \
-	
-include $(GOROOT)/src/Make.pkg
+PREFIX = github.com/rdrdr/hamcrest
+
+DEPS=\
+	$(PREFIX)/base \
+	$(PREFIX)/asserter \
+	$(PREFIX)/core \
+	$(PREFIX)/logic \
+	$(PREFIX)/comparison \
+	$(PREFIX)/collections \
+	$(PREFIX)/reflect \
+	$(PREFIX)/strings \
+
+
+.PHONY: all bench clean install nuke test
+all bench clean install nuke test: $(DEPS)
+
+all: TARGET=nuke install test
+bench: TARGET=bench
+clean: TARGET=clean
+nuke: TARGET=nuke
+test: TARGET=test
+install: TARGET=install
+
+$(DEPS): force
+	make -C ../../../$@ $(TARGET)
+
+.PHONY: force
+force :;

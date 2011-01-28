@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package hamcrest
+package base
 
 import (
 	"fmt"
@@ -134,7 +134,7 @@ func (self *Result) WithMatcherAndValue(matcher *Matcher, value interface{}) *Re
 type Matcher struct {
 	description SelfDescribing
 	match func(v interface{}) *Result
-	comments []interface{}
+	comments []SelfDescribing
 }
 
 // Creates a new Matcher using the given matching function, with the
@@ -268,18 +268,33 @@ func (self *Matcher) Match(value interface{}) *Result {
 }
 
 // Returns a slice of messages that supplement the description.
-func (self *Matcher) Comments() []interface{} {
-	comments := make([]interface{}, len(self.comments))
+func (self *Matcher) Comments() []SelfDescribing {
+	comments := make([]SelfDescribing, len(self.comments))
 	copy(comments, self.comments)
 	return comments
 }
 
 // Returns a *new* Matcher similar to this one, but with the
-// given additional comments.
-func (self *Matcher) Comment(comments... interface{}) *Matcher {
-	all := make([]interface{}, 0, len(self.comments) + len(comments))
+// given additional comment.
+func (self *Matcher) Comment(comments...interface{}) *Matcher {
+	all := make([]SelfDescribing, 0, len(self.comments) + len(comments))
 	copy(all, self.comments)
-	all = append(all, comments...)
+	for _, comment := range comments {
+		selfDescribing, ok := comment.(SelfDescribing)
+		if !ok {
+			selfDescribing = Description("%v", comment)
+		}
+		all = append(all, selfDescribing)
+	}
+	return &Matcher{description:self.description, match:self.match, comments:all}
+}
+
+// Returns a *new* Matcher similar to this one, but with the
+// given additional format/args as a comment.
+func (self *Matcher) Commentf(format string, args...interface{}) *Matcher {
+	all := make([]SelfDescribing, 0, len(self.comments) + 1)
+	copy(all, self.comments)
+	all = append(all, Description(format, args...))
 	return &Matcher{description:self.description, match:self.match, comments:all}
 }
 

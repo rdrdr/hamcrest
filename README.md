@@ -8,7 +8,7 @@ results.
 Installation:
 ========
 
-To install, run `make` from the same directory as this
+To install, run `make install` from the same directory as this
 `README.md` file.
 
 Packages
@@ -16,18 +16,14 @@ Packages
 
 `hamcrest.go` comes in several packages that you assemble to fit your needs:
 
-*   `hamcrest`:  Defines the types `Matcher` and `Result`, provides factory
-    functions to create them, and defines several core Matchers:
-    `Is`, `Anything`, `True`, `False`, `Nil`, `DeeplyEqualTo`, `AnyOf`, and
-    `AllOf`.
+*   `hamcrest/base`:  Defines the types `Matcher`, `Result` and `SelfDescribing`
+    and provides factory functions to create them.
 
-*   `hamcrest/collections`:  Matchers on arrays/slices and maps, such as
+*   `hamcrest/core`:  Defines a set of Matchers for doing basic comparisons,
+    equality testing, nil checking, and grouping/composition matchers.
+
+*   `hamcrest/collections`:  Matchers on arrays/slices/maps, such as
     `EachElement`, `EveryElement`, `EachMapElement`, `EveryMapElement`.
-
-*   `hamcrest/comparison`:  Comparison matchers for >=, <=, >, <, ==, and !=.
-
-*   `hamcrest/logic`:   Matchers for compound logical statements:
-    `Not`, `And`, `Or`, `Nor`, `Xor`, `If/Then`, and `Iff`.
 
 *   `hamcrest/reflect`:  Matchers using type reflection, such as `ToType`,
     `SameTypeAs`, `SliceOf`, `MapOf`, etc.
@@ -39,14 +35,14 @@ Packages
     (to stdout, stderr, or any object that implements io.Writer) or in
     unit tests (using `testing.T` from Go's standard `testing` package).
 
-    Note: the asserter package isn't *really* part of Hamcrest:  it's just
+    Note: the `asserter` package isn't *really* part of Hamcrest:  it's just
     a handy way of using the Hamcrest results in conjunction with the
     standard Go testing package.
 
 You may also choose to write your own Matchers (see *Custom matchers*, below).
 
 
-Example of using hamcrest at runtime:
+Example of using Hamcrest at runtime:
 =====================================
 
 Create an `Asserter`.  The simplest way to do this is with the factory
@@ -55,23 +51,20 @@ stderr and calls `panic` on `FailNow`.  Use that asserter during init()
 to make sure globals are properly initialized:
 
 	import (
-		"hamcrest"
-		"hamcrest/asserter"
-		"hamcrest/strings"
+		"github.com/rdrdr/hamcrest/asserter"
+		"github.com/rdrdr/hamcrest/core"
+		"github.com/rdrdr/hamcrest/strings"
 	)
 	
 	var hostnames = []string { "news.foo.com", "news.bar.com" }
 
 	func init() {
-		// The next three aliases are to improve readability
-		AnyOf := hamcrest.AnyOf
-		EndsWith := strings.EndsWith
-		IsForOneOfOurDomains := AnyOf(EndsWith(".foo.com"),
-		                              EndsWith(".bar.com"))
+		IsInOneOfOurDomains := core.AnyOf(strings.EndsWith(".foo.com"),
+		                                  strings.EndsWith(".bar.com"))
 		
 		var we = asserter.UsingStderr()
 		for _ , hostname := range hostnames {
-			we.FailNowUnless(hostname, IsForOneOfOurDomains)
+			we.FailNowUnless(hostname, IsInOneOfOurDomains)
 		}
 	}
 
@@ -79,7 +72,8 @@ Or use the `we` asserter at runtime to guarantee that a method's
 preconditions are met:
 
 	func WriteTo(filename string) bool {
-		we.AssertThat(filename, EndsWith(".txt").Comment("Must have txt extension."))
+		we.AssertThat(filename, strings.EndsWith(".txt").
+			Comment("Files must have txt extension."))
 		// Use filename here.
 	}
 
@@ -190,12 +184,35 @@ Hamcrest comes with a library of useful matchers. Here are some of the most
 common ones.
 
   * `Anything` - matches any input
-  * `DeeplyEqualTo(obj)` - matches any object `x` where `reflect.DeepEquals(x, obj)` is true
+  
   * `True` - only matches bool `true`
   * `False` - only matches bool `false`
-  * `Not(matcher)` - logical not of `matcher`
-  * `Nil` - matches objects whose types have an `IsNil()` method  which returns true for the object
-  * `NonNil` - inverse of `Nil` matcher (equivalent to `Not(Nil)`)
+  * `Not(matcher)` - logical not of `matcher`.
+     
+  
+  * `If(m1).Then(m2)` - checks that whenever `m1` matches, so does `m2`
+  * `IfAndOnlyIf(m1).Then(m2)` - checks that `m1` and `m2` both match/don't match.
+
+  * `EqualTo(obj)` - matches any object `x`
+        where `x == obj` is legal and true
+  * `NotEqualTo(obj)` - matches any object `x`
+        where `x != obj` is legal and true
+  * `DeepEqualTo(obj)` - matches any object `x`
+        where `reflect.DeepEquals(x, obj)` is true
+  * `GreaterThan(obj)` - matches any object `x`
+        where `x > obj` is legal and true
+  * `GreaterThanOrEqualTo(obj)` - matches any object `x`
+        where `x <= obj` is legal and true
+  * `LessThan(obj)` - matches any object `x`
+        where `x < obj` is legal and true
+  * `LessThanOrEqualTo(obj)` - matches any object `x`
+        where `x <= obj` is legal and true
+  
+  * `Nil` - matches objects of any type with an `IsNil()` method that
+        returns true for the given object
+  * `NonNil` - matches objects of any type with an `IsNil()` method that
+        returns false for the given object
+  
   * `AnyOf(matchers...)` - short-circuiting n-ary logical Or
   * `AllOf(matchers...)` - short-circuiting n-ary logical And
 

@@ -4,7 +4,7 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=hamcrest/collections
+TARG=github.com/rdrdr/hamcrest/collections
 GOFILES=\
 	collections.go\
 	

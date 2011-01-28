@@ -6,31 +6,31 @@ package core
 
 import (
 	"fmt"
-	"hamcrest"
+	"github.com/rdrdr/hamcrest/base"
 	"reflect"
 )
 
 // Returns a Matcher that matches any input value.
-func Anything() *hamcrest.Matcher {
+func Anything() *base.Matcher {
 	return _Anything
 }
-var _Anything *hamcrest.Matcher // singleton
+var _Anything *base.Matcher // singleton
 func init() {
-	match := func (actual interface{}) *hamcrest.Result {
-		return hamcrest.NewResultf(true, "always matches")
+	match := func (actual interface{}) *base.Result {
+		return base.NewResultf(true, "always matches")
 	}
-	_Anything = hamcrest.NewMatcherf(match, "Anything")
+	_Anything = base.NewMatcherf(match, "Anything")
 }
 
 
 // Returns a Matcher that matches the boolean value true.
-func True() *hamcrest.Matcher {
-	return hamcrest.True()
+func True() *base.Matcher {
+	return base.True()
 }
 
 // Returns a Matcher that matches the boolean value false.
-func False() *hamcrest.Matcher {
-	return hamcrest.False()
+func False() *base.Matcher {
+	return base.False()
 }
 
 // Returns a Matcher that matches on values that cause the given
@@ -38,9 +38,9 @@ func False() *hamcrest.Matcher {
 //
 // functionOrMatcher should either be a function that accepts one
 // parameter or a Matcher.
-func PanicWhenApplying(functionOrMatcher interface{}, name string) *hamcrest.Matcher {
+func PanicWhenApplying(functionOrMatcher interface{}, name string) *base.Matcher {
 	var doSomething func(interface{})
-	if matcher, ok := functionOrMatcher.(*hamcrest.Matcher); ok {
+	if matcher, ok := functionOrMatcher.(*base.Matcher); ok {
 		doSomething = func(actual interface{}) { matcher.Match(actual) }
 	} else {
 		value := reflect.NewValue(functionOrMatcher)
@@ -78,123 +78,156 @@ func PanicWhenApplying(functionOrMatcher interface{}, name string) *hamcrest.Mat
 			}
 		}
 	}
-	match := func (actual interface{}) (result *hamcrest.Result) {
+	match := func (actual interface{}) (result *base.Result) {
 		defer func() {
 			if recover() != nil {
-				result = hamcrest.NewResultf(true, "Panicked")
+				result = base.NewResultf(true, "Panicked")
 			}
 		}()
 		doSomething(actual)
-		result = hamcrest.NewResultf(false, "Did not panic")
+		result = base.NewResultf(false, "Did not panic")
 		return
 	}
-	return hamcrest.NewMatcherf(match,
+	return base.NewMatcherf(match,
 		"PanicWhenApplying[%v]", name)
 }
 
 
 // Returns a Matcher that decorates another matcher and only matches
 // when the underlying matcher does not match (and vice versa).
-func Not(matcher *hamcrest.Matcher) *hamcrest.Matcher {
-	match := func (actual interface{}) *hamcrest.Result {
+func Not(matcher *base.Matcher) *base.Matcher {
+	match := func (actual interface{}) *base.Result {
 		result := matcher.Match(actual)
-		return hamcrest.NewResult(!result.Matched(), result).
+		return base.NewResult(!result.Matched(), result).
 			WithCauses(result.Causes()...)
 	}
-	return hamcrest.NewMatcherf(match, "Not[%v]", matcher)
+	return base.NewMatcherf(match, "Not[%v]", matcher)
 }
 
 // Returns a Matcher that decorates another matcher.
-func Is(matcher *hamcrest.Matcher) *hamcrest.Matcher {
-	match := func (actual interface{}) *hamcrest.Result {
+func Is(matcher *base.Matcher) *base.Matcher {
+	match := func (actual interface{}) *base.Result {
 		result := matcher.Match(actual)
-		return hamcrest.NewResult(result.Matched(), result).
+		return base.NewResult(result.Matched(), result).
 			WithCauses(result.Causes()...)
 	}
-	return hamcrest.NewMatcherf(match, "Is[%v]", matcher)
+	return base.NewMatcherf(match, "Is[%v]", matcher)
 }
 
 
 // Returns a Matcher that matches if the actual value is nil
 // or the nil value of its type.  (Note that this is *not*
 // equivalent to DeeplyEqualTo(nil).)
-func Nil() *hamcrest.Matcher {
-	return hamcrest.Nil()
+func Nil() *base.Matcher {
+	return base.Nil()
 }
-
 
 // Returns a Matcher that matches if the actual value is 
 // neither nil nor the nil value of its type.  (Note that
 // this is *not* equivalent to Not(DeeplyEqualTo(nil)).)
-func NonNil() *hamcrest.Matcher {
-	return hamcrest.NonNil()
+func NonNil() *base.Matcher {
+	return base.NonNil()
 }
-
 
 // Returns a Matcher that checks if the actual value is (deeply)
 // equal to the given expected value, using reflect.DeepEqual.
 //
 // For an equality test equivalent to `==`, see the
 // `hamcrest/comparison` package.
-func DeeplyEqualTo(expected interface{}) *hamcrest.Matcher {
-	return hamcrest.DeepEqualTo(expected)
+func DeepEqualTo(expected interface{}) *base.Matcher {
+	return base.DeepEqualTo(expected)
 }
 
+// Returns a matcher that matches values that are greater-than the given
+// expected value, using the greater-than (<) operator.
+func GreaterThan(expected interface{}) *base.Matcher {
+	return base.GreaterThan(expected)
+}
+
+// Returns a matcher that matches values that are greater-than-or-equal-to
+// the given expected value, using the greater-than-or-equal-to (>=) operator.
+func GreaterThanOrEqualTo(expected interface{}) *base.Matcher {
+	return base.GreaterThanOrEqualTo(expected)
+}
+
+// Returns a matcher that matches values that are less-than the given
+// expected value, using the less-than (<) operator.
+func LessThan(expected interface{}) *base.Matcher {
+	return base.LessThan(expected)
+}
+
+// Returns a matcher that matches values that are less-than-or-equal-to
+// the given expected value, using the less-than-or-equal-to (<=) operator.
+func LessThanOrEqualTo(expected interface{}) *base.Matcher {
+	return base.LessThanOrEqualTo(expected)
+}
+
+// Returns a matcher that matches values that are equal to the
+// given expected value, using the equality (==) operator.
+func EqualTo(expected interface{}) *base.Matcher {
+	return base.EqualTo(expected)
+}
+
+// Returns a matcher that matches values that are not equal to the
+// given expected value, using the inequality (!=) operator.
+func NotEqualTo(expected interface{}) *base.Matcher {
+	return base.NotEqualTo(expected)
+}
 
 // Returns a short-circuiting Matcher that matches whenever all of
 // the given matchers match a given input value.  If any component
 // matcher fails to match an input value, later matchers are not
 // attempted.
-func AllOf(matchers...*hamcrest.Matcher) *hamcrest.Matcher {
-	match := func (actual interface{}) *hamcrest.Result {
-		var results []*hamcrest.Result
+func AllOf(matchers...*base.Matcher) *base.Matcher {
+	match := func (actual interface{}) *base.Result {
+		var results []*base.Result
 		for index, matcher := range matchers {
 			result := matcher.Match(actual)
 			results := append(results, result)
 			if !result.Matched() {
-				return hamcrest.NewResultf(false,
+				return base.NewResultf(false,
 					"Failed matcher %v of %v: [%v]",
 					index+1, len(matchers), matcher).
 					WithCauses(results...)
 			}
 		}
-		return hamcrest.NewResultf(true,
+		return base.NewResultf(true,
 			"Matched all %v matchers", len(matchers)).
 			WithCauses(results...)
 	}
 	descriptions := make([]interface{}, len(matchers), len(matchers))
 	for index, matcher := range matchers {
-		descriptions[index] = hamcrest.Description("[#%v: %v]", index+1, matcher)
+		descriptions[index] = base.Description("[#%v: %v]", index+1, matcher)
 	}
-	return hamcrest.NewMatcherf(match, "AllOf%v", descriptions)
+	return base.NewMatcherf(match, "AllOf%v", descriptions)
 }
 
 // Returns a short-circuiting Matcher that matches whenever all of
 // the given matchers match a given input value.  If any component
 // matcher fails to match an input value, later matchers are not
 // attempted.
-func AnyOf(matchers...*hamcrest.Matcher) *hamcrest.Matcher {
-	match := func (actual interface{}) *hamcrest.Result {
-		var results []*hamcrest.Result
+func AnyOf(matchers...*base.Matcher) *base.Matcher {
+	match := func (actual interface{}) *base.Result {
+		var results []*base.Result
 		for index, matcher := range matchers {
 			result := matcher.Match(actual)
 			results := append(results, result)
 			if result.Matched() {
-				return hamcrest.NewResultf(true,
+				return base.NewResultf(true,
 					"Matched on matcher %v of %v: [%v]",
 					index+1, len(matchers), matcher).
 					WithCauses(results...)
 			}
 		}
-		return hamcrest.NewResultf(false,
+		return base.NewResultf(false,
 			"Matched none of the %v matchers", len(matchers)).
 			WithCauses(results...)
 	}
 	descriptions := make([]interface{}, len(matchers), len(matchers))
 	for index, matcher := range matchers {
-		descriptions[index] = hamcrest.Description("[#%v: %v]", index+1, matcher)
+		descriptions[index] = base.Description("[#%v: %v]", index+1, matcher)
 	}
-	return hamcrest.NewMatcherf(match, "AnyOf%v", descriptions)
+	return base.NewMatcherf(match, "AnyOf%v", descriptions)
 }
 
 
@@ -207,7 +240,7 @@ func AnyOf(matchers...*hamcrest.Matcher) *hamcrest.Matcher {
 //
 // The given function must be able to accept a single argument and
 // return a single argument.
-func Applying(function interface{}, name string) func(*hamcrest.Matcher) *hamcrest.Matcher  {
+func Applying(function interface{}, name string) func(*base.Matcher) *base.Matcher  {
 	funcValue := reflect.NewValue(function).(*reflect.FuncValue)
 	funcType := funcValue.Type().(*reflect.FuncType)
 	numIn := funcType.NumIn()
@@ -218,8 +251,8 @@ func Applying(function interface{}, name string) func(*hamcrest.Matcher) *hamcre
 	if numOut == 0 {
 		panic(fmt.Sprintf("function must return at least one value, was %v by function %v", numOut, function))
 	}
-	return func(matcher *hamcrest.Matcher) *hamcrest.Matcher {
-		match := func (actual interface{}) *hamcrest.Result {
+	return func(matcher *base.Matcher) *base.Matcher {
+		match := func (actual interface{}) *base.Result {
 			actualValue := reflect.NewValue(actual)
 			argValues := make([]reflect.Value, numIn, numIn)
 			if numIn > 0 {
@@ -240,10 +273,10 @@ func Applying(function interface{}, name string) func(*hamcrest.Matcher) *hamcre
 			outValue := outValues[0]
 			out := outValue.Interface()
 			result := matcher.Match(out)
-			return hamcrest.NewResultf(result.Matched(),
+			return base.NewResultf(result.Matched(),
 				"%v(%#v) = %v", name, actual, out).
 				WithCauses(result)
 		}
-		return hamcrest.NewMatcherf(match, "%v[%v]", name, matcher)
+		return base.NewMatcherf(match, "%v[%v]", name, matcher)
 	}
 }

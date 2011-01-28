@@ -6,16 +6,11 @@ package strings
 
 import (
 	"fmt"
-	"hamcrest/asserter"
-	"hamcrest/comparison"
-	"hamcrest/core"
+	"github.com/rdrdr/hamcrest/asserter"
+	. "github.com/rdrdr/hamcrest/core"
 	"testing"
 )
 
-
-var Anything = core.Anything
-var Not = core.Not
-var EqualTo = core.DeeplyEqualTo
 
 func Test_ToString_builtinTypes(t *testing.T) {
 	we := asserter.Using(t)
@@ -72,8 +67,8 @@ func Test_ToUpper(t *testing.T) {
 
 func Test_ToLen(t *testing.T) {
 	we := asserter.Using(t)
-	we.CheckThat("SHOUT", ToLen(comparison.EqualTo(5)))
-	we.CheckThat("SHOUTLOUDER", ToLen(comparison.EqualTo(11)))
+	we.CheckThat("SHOUT", ToLen(EqualTo(5)))
+	we.CheckThat("SHOUTLOUDER", ToLen(EqualTo(11)))
 	we.CheckThat(nil, Not(ToLen(Anything())))
 }
 

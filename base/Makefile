@@ -4,8 +4,11 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=github.com/rdrdr/hamcrest/strings
+TARG=github.com/rdrdr/hamcrest/base
 GOFILES=\
-	strings.go\
+	comparison.go \
+	defs.go \
+	matchers.go \
 	
 include $(GOROOT)/src/Make.pkg
+
