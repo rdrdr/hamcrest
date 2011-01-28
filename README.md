@@ -255,22 +255,33 @@ Custom matchers
 
 Example:
 
-    func IsMultipleOf(k int) *hamcrest.Matcher {
-        pass := NewResultf(true, "was a multiple of %v", k)
-        fail := NewResultf(false, "was not a multiple of %v", k)
-        match := func(actual interface{}) *hamcrest.Result {
-            if n, ok := actual.(int); ok {
-                if n % k == 0 {
-                    return pass
-                }
-                return fail
-            }
-            return NewResult(false, "was a %T, not an int", actual)
-        }
-        return NewMatcher(match, "multiple of %v", k)
-    }
-
+	func IsMultipleOf(k int) *base.Matcher {
+		match := func(n int) bool {
+			return n % k == 0
+		}
+		return base.NewMatcherf(match, "multiple of %v", k)
+	}
+	
 And used:
-    we.CheckThat(recordSize, IsMultipleOf(8).Comment(
-        "profiling suggests better performance than 4"))
+
+	we.CheckThat(recordSize, IsMultipleOf(8).Comment(
+		"profiling suggests better performance than multiple of 4"))
+
+Or, if you want more control over the error messages:
+
+	func IsMultipleOf(k int) *base.Matcher {
+		match := func(actual interface{}) *base.Result {
+			if n, ok := actual.(int); ok {
+				if remainder := n % k; remainder != 0 {
+					return base.NewResultf(false,
+						"was not a multiple of %v (remainder %v)", k, remainder)
+				}
+				return base.NewResultf(true, "was a multiple of %v", k)
+			}
+			return base.NewResultf(false, "was a %T, expected an int!", actual)
+		}
+		return base.NewMatcherf(match, "multiple of %v", k)
+	}
+
+
 
