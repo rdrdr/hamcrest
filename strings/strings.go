@@ -198,23 +198,36 @@ func HasPattern(pattern string) *base.Matcher {
 	return base.NewMatcherf(match, "HasPattern[\"%v\"]", pattern)
 }
 
-type ExtractPatternClause struct {
+type WithPatternClause struct {
 	re *regexp.Regexp
+	group int
 }
 
-func ExtractPattern(pattern string) *ExtractPatternClause {
-	return &ExtractPatternClause{ re : regexp.MustCompile(pattern) }
+func WithPattern(pattern string) *WithPatternClause {
+	return &WithPatternClause{re: regexp.MustCompile(pattern), group: 0 }
+}
+
+//
+//
+//
+func (self *WithPatternClause) Group(index int) *WithPatternClause {
+	numGroups := self.re.NumSubexp()
+	if index < 0 || index > numGroups {
+		panic(fmt.Sprintf("Group %v doesn't exist: only %v groups in re %v",
+			index, numGroups, self.re))
+	}
+	return &WithPatternClause{re: self.re, group: index }
 }
 
 // Completes a matcher that finds every occurrence of a pattern in the
 // given input and applies the matcher to it, only matching if every
 // occurrence matches.  For example:
-//    i_before_e_except := ToLower(ExtractPattern(".ei").Each(HasPrefix("c")))
+//    i_before_e_except := ToLower(WithPattern(".ei").Each(StartsWith("c")))
 // will match:
 //    "ceiling receipt"
 // but not:
 //    "deceiver seizure"
-func (self *ExtractPatternClause) Each(matcher *base.Matcher) *base.Matcher {
+func (self *WithPatternClause) EachMatch(matcher *base.Matcher) *base.Matcher {
 	re := self.re
 	match := func (s string) *base.Result {
 		matches := re.FindAllStringIndex(s, -1)
@@ -235,18 +248,18 @@ func (self *ExtractPatternClause) Each(matcher *base.Matcher) *base.Matcher {
 		return base.NewResultf(true,
 			"Matched all occurrences of pattern \"%v\"", re)
 	}
-	return base.NewMatcherf(match, "Each[\"%v\"][%v]", re, matcher)
+	return base.NewMatcherf(match, "EachMatch[\"%v\"][%v]", re, matcher)
 }
 
 // Completes a matcher that finds every occurrence of a pattern in the
 // given input and applies the matcher to it, only matching if at least
 // one occurrence matches.  For example:
-//    here_kitty := ExtractPattern("[a-z]+at").Any(HasPrefix("c"))
+//    here_kitty := WithPattern(".at").AnyMatch(StartsWith("c"))
 // will match:
-//    "that cravat is phat"
+//    "that cat is phat"
 // but not:
 //    "Matt spat at a rat"
-func (self *ExtractPatternClause) Any(matcher *base.Matcher) *base.Matcher {
+func (self *WithPatternClause) AnyMatch(matcher *base.Matcher) *base.Matcher {
 	re := self.re
 	match := func (s string) *base.Result {
 		matches := re.FindAllStringIndex(s, -1)
@@ -269,6 +282,6 @@ func (self *ExtractPatternClause) Any(matcher *base.Matcher) *base.Matcher {
 			"Matched none of the %v occurrences of pattern \"%v\"",
 			occurrences, re)
 	}
-	return base.NewMatcherf(match, "Any[\"%v\"][%v]", re, matcher)
+	return base.NewMatcherf(match, "AnyMatch[\"%v\"][%v]", re, matcher)
 }
 
