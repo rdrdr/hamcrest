@@ -253,16 +253,30 @@ func Applying(function interface{}, name string) func(*base.Matcher) *base.Match
 	}
 	return func(matcher *base.Matcher) *base.Matcher {
 		match := func (actual interface{}) *base.Result {
+			Assign := func(dst reflect.Value, src reflect.Value) (ok bool) {
+				defer func() { recover(); }()
+				dst.SetValue(src)
+				ok = true
+				return
+			}
 			actualValue := reflect.NewValue(actual)
 			argValues := make([]reflect.Value, numIn, numIn)
 			if numIn > 0 {
 				inType := funcType.In(0)
 				if numIn == 1 && funcType.DotDotDot() {
 					inSlice := reflect.MakeSlice(inType.(*reflect.SliceType), 1, 1)
-					inSlice.Elem(0).SetValue(actualValue)
+					if !Assign(inSlice.Elem(0), actualValue) {
+						return base.NewResultf(false,
+							"Cannot use %T as input to %T", actual, function)
+					}
 					argValues[0] = inSlice
 				} else {
-					argValues[0] = actualValue
+					inValue := reflect.MakeZero(inType)
+					if !Assign(inValue, actualValue) {
+						return base.NewResultf(false,
+							"Cannot use %T as input to %T", actual, function)
+					}
+					argValues[0] = inValue
 				}
 				for i := 1; i < numIn; i++ {
 					inType = funcType.In(i)

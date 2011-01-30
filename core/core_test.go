@@ -6,38 +6,14 @@ package core
 
 import (
 	"github.com/rdrdr/hamcrest/base"
+	"github.com/rdrdr/hamcrest/asserter"
 	"fmt"
 	"reflect"
 	"testing"
 )
 
-func _LogResult(t *testing.T, indent string, result *base.Result) {
-	s := "Matched"
-	if !result.Matched() {
-		s = "Nonmatch"
-	}
-	t.Logf("%v%v: %v", indent, s, result)
-	indent = "\t" + indent
-	for _, cause := range result.Causes() {
-		_LogResult(t, indent, cause)
-	}
-}
-
-func checkResultIsMatching(t *testing.T, result *base.Result, message string) {
-	if !result.Matched() {
-		t.Errorf("Expected matching result from applying %v to %#v, was [%v] %v",
-			result.Matcher(), result.Value(), result, message)
-	}
-	_LogResult(t, "", result)
-}
-
-func checkResultIsNonMatching(t *testing.T, result *base.Result, message string) {
-	if result.Matched() {
-		t.Errorf("Expected non-matching result from applying %v to %#v, was [%v].  Message: %v",
-			result.Matcher(), result.Value(), result, message)
-	}
-	_LogResult(t, "", result)
-}
+var Matched = base.Matched()
+var DidNotMatch = base.DidNotMatch()
 
 type Stringer interface { String() string }
 
@@ -51,121 +27,138 @@ var uninitialized struct {
 }
 
 func checkMatcherIsMatchingOnNils(t *testing.T, matcher *base.Matcher) {
-	checkResultIsMatching(t, matcher.Match(nil), "nil")
-	checkResultIsMatching(t, matcher.Match(uninitialized._pointer), "uninitialized pointer")
-	checkResultIsMatching(t, matcher.Match(uninitialized._func), "uninitialized func")
-	checkResultIsMatching(t, matcher.Match(uninitialized._slice), "uninitialized slice")
-	checkResultIsMatching(t, matcher.Match(uninitialized._chan), "uninitialized chan")
-	checkResultIsMatching(t, matcher.Match(uninitialized._map), "uninitialized map")
-	checkResultIsMatching(t, matcher.Match(uninitialized._interface), "uninitialized interface")
+	we := asserter.Using(t)
+	we.CheckThat(matcher.Match(nil), Matched.Comment("nil"))
+	we.CheckThat(matcher.Match(uninitialized._pointer), Matched.Comment("uninitialized pointer"))
+	we.CheckThat(matcher.Match(uninitialized._func), Matched.Comment("uninitialized func"))
+	we.CheckThat(matcher.Match(uninitialized._slice), Matched.Comment("uninitialized slice"))
+	we.CheckThat(matcher.Match(uninitialized._chan), Matched.Comment("uninitialized chan"))
+	we.CheckThat(matcher.Match(uninitialized._map), Matched.Comment("uninitialized map"))
+	we.CheckThat(matcher.Match(uninitialized._interface), Matched.Comment("uninitialized interface"))
 }
 
 func checkMatcherIsNonMatchingOnNils(t *testing.T, matcher *base.Matcher) {
-	checkResultIsNonMatching(t, matcher.Match(nil), "nil")
-	checkResultIsNonMatching(t, matcher.Match(uninitialized._pointer), "uninitialized pointer")
-	checkResultIsNonMatching(t, matcher.Match(uninitialized._func), "uninitialized func")
-	checkResultIsNonMatching(t, matcher.Match(uninitialized._slice), "uninitialized slice")
-	checkResultIsNonMatching(t, matcher.Match(uninitialized._chan), "uninitialized chan")
-	checkResultIsNonMatching(t, matcher.Match(uninitialized._map), "uninitialized map")
-	checkResultIsNonMatching(t, matcher.Match(uninitialized._interface), "uninitialized interface")
+	we := asserter.Using(t)
+	we.CheckThat(matcher.Match(nil), DidNotMatch.Comment("nil"))
+	we.CheckThat(matcher.Match(uninitialized._pointer), DidNotMatch.Comment("uninitialized pointer"))
+	we.CheckThat(matcher.Match(uninitialized._func), DidNotMatch.Comment("uninitialized func"))
+	we.CheckThat(matcher.Match(uninitialized._slice), DidNotMatch.Comment("uninitialized slice"))
+	we.CheckThat(matcher.Match(uninitialized._chan), DidNotMatch.Comment("uninitialized chan"))
+	we.CheckThat(matcher.Match(uninitialized._map), DidNotMatch.Comment("uninitialized map"))
+	we.CheckThat(matcher.Match(uninitialized._interface), DidNotMatch.Comment("uninitialized interface"))
+}
+
+var sampleValues []interface{}
+func init() {
+	sampleValues = []interface{}{
+		true,
+		false,
+		int(42), int8(42), int16(42), int32(42), int64(42),
+		uint(42), uint8(42), uint16(42), uint32(42), uint64(42), 
+		float(42), float32(42), float64(42),
+		complex(42), complex64(42), complex128(42),
+		"42",
+		struct {Field int} {Field:42},
+		&struct {Field int} {Field:42},
+		reflect.Typeof(struct {Field int} {Field:42}),
+		make(chan int, 42),
+		func() int { return 42 },
+		map[string]int{ "forty":40, "two":2, "forty-two":42 },
+		[]int{40, 41, 42},
+		[...]int{40, 41, 42},
+		[42]int{2:40, 40:2},
+		nil,
+		uninitialized,
+		uninitialized._chan,
+		uninitialized._func,
+		uninitialized._interface,
+		uninitialized._map,
+		uninitialized._pointer,
+		uninitialized._slice,
+	}
 }
 
 func logSamples(t *testing.T, matcher *base.Matcher) {
 	t.Logf("Sample results for: %v\n", matcher)
-	t.Logf("\ton true: %v\n", matcher.Match(true))
-	t.Logf("\ton false: %v\n", matcher.Match(false))
-	t.Logf("\ton int: %v\n", matcher.Match(42))
-	t.Logf("\ton uint: %v\n", matcher.Match(uint(42)))
-	t.Logf("\ton float: %v\n", matcher.Match(42.0))
-	t.Logf("\ton string: %v\n", matcher.Match("foobar"))
-	t.Logf("\ton struct: %v\n", matcher.Match(struct {Field int} {Field:42}))
-	t.Logf("\ton type: %v\n", matcher.Match(reflect.Typeof(uninitialized)))
-	
-	t.Logf("\ton channel: %v\n", matcher.Match(make(chan int, 1)))
-	t.Logf("\ton function: %v\n", matcher.Match(func() int { return 1 }))
-	t.Logf("\ton function: %v\n", matcher.Match(interface{}(nil)))
-	t.Logf("\ton map: %v\n", matcher.Match(map[int]string{1:"one", 2:"two"}))
-	t.Logf("\ton pointer: %v\n", matcher.Match(&struct {Field int} {Field:42}))
-	t.Logf("\ton slice: %v\n", matcher.Match([]int{1}))
-	
-	t.Logf("\ton nil: %v\n", matcher.Match(nil))
-	t.Logf("\ton nil channel: %v\n", matcher.Match(uninitialized._chan))
-	t.Logf("\ton nil function: %v\n", matcher.Match(uninitialized._func))
-	t.Logf("\ton nil interface: %v\n", matcher.Match(uninitialized._interface))
-	t.Logf("\ton nil map: %v\n", matcher.Match(uninitialized._map))
-	t.Logf("\ton nil pointer: %v\n", matcher.Match(uninitialized._pointer))
-	t.Logf("\ton nil slice: %v\n", matcher.Match(uninitialized._slice))
+	we := asserter.Using(t)
+	for index, value := range sampleValues {
+		t.Logf("Sample #%v: %T[value: %v]\n", index+1, value, value)
+		we.LogResult(matcher.Match(value))
+	}
 }
 
 // Check Matchers
 func TestAnything(t *testing.T) {
+	we := asserter.Using(t)
 	matcher := Anything()
-	checkResultIsMatching(t, matcher.Match(nil), "Should match nil")
-	checkResultIsMatching(t, matcher.Match("non-nil"), "Should match non-nil")
-	checkResultIsMatching(t, matcher.Match(true), "Should match true")
-	checkResultIsMatching(t, matcher.Match(false), "Should match false")
-	checkResultIsMatching(t, matcher.Match(make([]int, 1)), "Should match slice")
+	we.CheckThat(matcher.Match(true), Matched)
+	we.CheckThat(matcher.Match(false), Matched)
+	we.CheckThat(matcher.Match("foo"), Matched)
 	checkMatcherIsMatchingOnNils(t, matcher)
 	logSamples(t, matcher)
 }
 
 func Test_True(t *testing.T) {
+	we := asserter.Using(t)
 	matcher := True()
-	checkResultIsMatching(t, matcher.Match(true), "bool true")
-	checkResultIsNonMatching(t, matcher.Match(false), "bool false")
-	checkResultIsNonMatching(t, matcher.Match("foo"), "string")
+	we.CheckThat(matcher.Match(true), Matched)
+	we.CheckThat(matcher.Match(false), DidNotMatch)
+	we.CheckThat(matcher.Match("true"), DidNotMatch)
+	we.CheckThat(matcher.Match(1), DidNotMatch)
 	checkMatcherIsNonMatchingOnNils(t, matcher)
 	logSamples(t, matcher)
 }
 
 func Test_False(t *testing.T) {
+	we := asserter.Using(t)
 	matcher := False()
-	checkResultIsNonMatching(t, matcher.Match(true), "bool true")
-	checkResultIsMatching(t, matcher.Match(false), "bool false")
-	checkResultIsNonMatching(t, matcher.Match("foo"), "string")
+	we.CheckThat(matcher.Match(true), DidNotMatch)
+	we.CheckThat(matcher.Match(false), Matched)
+	we.CheckThat(matcher.Match("false"), DidNotMatch)
+	we.CheckThat(matcher.Match(0), DidNotMatch)
 	checkMatcherIsNonMatchingOnNils(t, matcher)
 	logSamples(t, matcher)
 }
 
 func Test_Not(t *testing.T) {
-	matcher := Not(False())
-	
-	checkResultIsMatching(t, matcher.Match(true), "bool true")
-	checkResultIsNonMatching(t, matcher.Match(false), "bool false")
-	checkResultIsMatching(t, matcher.Match("foo"), "string")
-	checkMatcherIsMatchingOnNils(t, matcher)
+	we := asserter.Using(t)
+	matcher := Not(True())
+	we.CheckThat(matcher.Match(true), DidNotMatch)
+	we.CheckThat(matcher.Match(false), Matched)
 	logSamples(t, matcher)
 }
 
 func Test_Is(t *testing.T) {
+	we := asserter.Using(t)
 	matcher := Is(True())
-	checkResultIsMatching(t, matcher.Match(true), "bool true")
-	checkResultIsNonMatching(t, matcher.Match(false), "bool false")
-	checkResultIsNonMatching(t, matcher.Match("foo"), "string")
-	checkMatcherIsNonMatchingOnNils(t, matcher)
+	we.CheckThat(matcher.Match(true), Matched)
+	we.CheckThat(matcher.Match(false), DidNotMatch)
 	logSamples(t, matcher)
 }
 
 func Test_Nil(t *testing.T) {
+	we := asserter.Using(t)
 	matcher := Nil()
-	checkResultIsNonMatching(t, matcher.Match(true), "bool")
-	checkResultIsNonMatching(t, matcher.Match(0), "number")
-	checkResultIsNonMatching(t, matcher.Match("foo"), "string")
+	we.CheckThat(matcher.Match(false), DidNotMatch)
+	we.CheckThat(matcher.Match(0), DidNotMatch)
+	we.CheckThat(matcher.Match("nil"), DidNotMatch)
 	checkMatcherIsMatchingOnNils(t, matcher)
 	logSamples(t, matcher)
 }
 
 func Test_NonNil(t *testing.T) {
+	we := asserter.Using(t)
 	matcher := NonNil()
-	checkResultIsMatching(t, matcher.Match(true), "bool")
-	checkResultIsMatching(t, matcher.Match(0), "number")
-	checkResultIsMatching(t, matcher.Match("foo"), "string")
+	we.CheckThat(matcher.Match(false), Matched)
+	we.CheckThat(matcher.Match(0), Matched)
+	we.CheckThat(matcher.Match("nil"), Matched)
 	checkMatcherIsNonMatchingOnNils(t, matcher)
 	logSamples(t, matcher)
 }
 
 type _DeepEqualType struct { x int }
 func Test_DeepEqualTo(t *testing.T) {
+	we := asserter.Using(t)
 	data := []interface{} {
 		nil, true, false,
 		int(42), uint(42), float(42), complex(42),
@@ -187,9 +180,9 @@ func Test_DeepEqualTo(t *testing.T) {
 		for _, y := range data {
 			message := fmt.Sprintf("%T[%v] and %T[%v]", x, x, y, y)
 			if reflect.DeepEqual(x, y) {
-				checkResultIsMatching(t, matcher.Match(y), message)
+				we.CheckThat(matcher.Match(y), Matched.Comment(message))
 			} else {
-				checkResultIsNonMatching(t, matcher.Match(y), message)
+				we.CheckThat(matcher.Match(y), DidNotMatch.Comment(message))
 			}
 		}
 	}
@@ -197,148 +190,212 @@ func Test_DeepEqualTo(t *testing.T) {
 }
 
 func Test_AllOf(t *testing.T) {
+	we := asserter.Using(t)
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
 	snoop := base.NewMatcherf(func(v interface{}) *base.Result {
 			calledSnoop = true
 			return base.NewResultf(false, "snooped!")
 		}, "Snoop")
-	checkResultIsMatching(t, AllOf(yes, yes, yes).Match(true), "all yes")
-	checkResultIsNonMatching(t, AllOf(yes, yes, no).Match(false), "not all yes")
-	checkResultIsNonMatching(t, AllOf(yes, no, snoop).Match(false),
-		"should short-circuit on no without snooping")
-	if calledSnoop {
-		t.Errorf("AllOf should short-circuit before calling snoop")
-	}
-	logSamples(t, AllOf(Anything(), NonNil(), DeepEqualTo(42)))
+	
+	we.CheckThat(AllOf(yes, yes, yes).Match(0), Matched.Comment("all matched"))
+	we.CheckThat(AllOf(yes, yes, no).Match(0), DidNotMatch.Comment("not all matched"))
+	we.CheckThat(AllOf(yes).Match(0), Matched.Comment("can pass one matcher"))
+	we.CheckThat(AllOf(no).Match(0), DidNotMatch.Comment("can fail one matcher"))
+	we.CheckThat(AllOf(yes, no, snoop).Match(0), DidNotMatch.Comment("can short-circuit"))
+	we.CheckFalse(calledSnoop, "AllOf should short-circuit on first non-match")
+	logSamples(t, AllOf(Not(True()), NonNil(), DeepEqualTo(42)))
 }
 
 func Test_AnyOf(t *testing.T) {
+	we := asserter.Using(t)
 	yes, no := Anything(), Not(Anything())
 	calledSnoop := false
 	snoop := base.NewMatcherf(func(v interface{}) *base.Result {
 			calledSnoop = true
 			return base.NewResultf(false, "snooped!")
 		}, "Snoop")
-	checkResultIsNonMatching(t, AnyOf(no, no, no).Match(true), "all no")
-	checkResultIsMatching(t, AnyOf(no, no, yes).Match(false), "one yes")
-	checkResultIsMatching(t, AnyOf(no, yes, snoop).Match(false),
-		"should short-circuit on yes without snooping")
-	if calledSnoop {
-		t.Errorf("AnyOf should short-circuit before calling snoop")
-	}
+	we.CheckThat(AnyOf(no, no, no).Match(0), DidNotMatch.Comment("none matched"))
+	we.CheckThat(AnyOf(no, no, yes).Match(0), Matched.Comment("one matched"))
+	we.CheckThat(AnyOf(yes).Match(0), Matched.Comment("can pass one matcher"))
+	we.CheckThat(AnyOf(no).Match(0), DidNotMatch.Comment("can fail one matcher"))
+	we.CheckThat(AnyOf(no, yes, snoop).Match(0), Matched.Comment("can short-circuit"))
+	we.CheckFalse(calledSnoop, "AnyOf should short-circuit on first match")
 	logSamples(t, AnyOf(True(), Nil(), DeepEqualTo(42)))
 }
 
 func Test_Applying_onFunction_FromType_ToType(t *testing.T) {
-	CheckEven := Applying(func(n int) bool { return n&1 == 0 }, "CheckEven")
-	checkResultIsMatching(t, CheckEven(Is(True())).Match(1234), "is even")
-	checkResultIsMatching(t, CheckEven(Is(False())).Match(123), "is not even")
-	checkResultIsMatching(t, Not(CheckEven(Is(False()))).Match(1234), "not is not even")
-	checkResultIsMatching(t, Not(CheckEven(Is(True()))).Match(123), "not is even")
-	Even := CheckEven(Is(True()))
-	Length := Applying(func(s string) int { return len(s) }, "Length")
-	checkResultIsMatching(t, Length(Is(Even)).Match("1234"), "length is even")
-	checkResultIsMatching(t, Length(Not(Even)).Match("123"), "length is not even")
-	checkResultIsMatching(t, Not(Length(Even)).Match("123"), "not length is even")
+	we := asserter.Using(t)
+	IsEven := Applying(func(n int) bool { return n&1 == 0 }, "IsEven")
+	ToLength := Applying(func(s string) int { return len(s) }, "ToLength")
+	ToString := Applying(func(i int) string { return fmt.Sprint(i) }, "ToString")
+	
+	ValueIsEven := IsEven(Is(True()))
+	LengthIsEven := ToString(ToLength(ValueIsEven))
+	
+	we.CheckThat(ValueIsEven.Match(123), DidNotMatch)
+	we.CheckThat(LengthIsEven.Match(123), DidNotMatch)
+	
+	we.CheckThat(ValueIsEven.Match(1234), Matched)
+	we.CheckThat(LengthIsEven.Match(1234), Matched)
+	
+	we.CheckThat(ValueIsEven.Match(124), Matched)
+	we.CheckThat(LengthIsEven.Match(124), DidNotMatch)
+	
+	we.CheckThat(ValueIsEven.Match(1233), DidNotMatch)
+	we.CheckThat(LengthIsEven.Match(1233), Matched)
+	
+	logSamples(t, ValueIsEven)
+	logSamples(t, LengthIsEven)
 }
 
 func Test_Applying_onFunction_FromTypeDotDotDot_ToType(t *testing.T) {
-	CheckEven := Applying(func(n...int) bool { return n[0]&1 == 0 }, "CheckEven")
-	checkResultIsMatching(t, CheckEven(Is(True())).Match(1234), "is even")
-	checkResultIsMatching(t, CheckEven(Is(False())).Match(123), "is not even")
-	checkResultIsMatching(t, Not(CheckEven(Is(False()))).Match(1234), "not is not even")
-	checkResultIsMatching(t, Not(CheckEven(Is(True()))).Match(123), "not is even")
-	Even := CheckEven(Is(True()))
-	Length := Applying(func(s...string) int { return len(s[0]) }, "Length")
-	checkResultIsMatching(t, Length(Is(Even)).Match("1234"), "length is even")
-	checkResultIsMatching(t, Length(Not(Even)).Match("123"), "length is not even")
-	checkResultIsMatching(t, Not(Length(Even)).Match("123"), "not length is even")
+	we := asserter.Using(t)
+	IsEven := Applying(func(n...int) bool { return n[0]&1 == 0 }, "IsEven")
+	ToLength := Applying(func(s... string) int { return len(s[0]) }, "ToLength")
+	ToString := Applying(func(i... int) string { return fmt.Sprint(i[0]) }, "ToString")
+	
+	ValueIsEven := IsEven(Is(True()))
+	LengthIsEven := ToString(ToLength(ValueIsEven))
+	
+	we.CheckThat(ValueIsEven.Match(123), DidNotMatch)
+	we.CheckThat(LengthIsEven.Match(123), DidNotMatch)
+	
+	we.CheckThat(ValueIsEven.Match(1234), Matched)
+	we.CheckThat(LengthIsEven.Match(1234), Matched)
+	
+	we.CheckThat(ValueIsEven.Match(124), Matched)
+	we.CheckThat(LengthIsEven.Match(124), DidNotMatch)
+	
+	we.CheckThat(ValueIsEven.Match(1233), DidNotMatch)
+	we.CheckThat(LengthIsEven.Match(1233), Matched)
+	
+	logSamples(t, ValueIsEven)
+	logSamples(t, LengthIsEven)
 }
 
 func Test_Applying_onFunction_FromTypeTypeDotDotDot_ToType(t *testing.T) {
-	CheckEven := Applying(func(n int, other...string) bool { return n&1 == 0 }, "CheckEven")
-	checkResultIsMatching(t, CheckEven(Is(True())).Match(1234), "is even")
-	checkResultIsMatching(t, CheckEven(Is(False())).Match(123), "is not even")
-	checkResultIsMatching(t, Not(CheckEven(Is(False()))).Match(1234), "not is not even")
-	checkResultIsMatching(t, Not(CheckEven(Is(True()))).Match(123), "not is even")
-	Even := CheckEven(Is(True()))
-	Length := Applying(func(s string, other...int) int { return len(s) }, "Length")
-	checkResultIsMatching(t, Length(Is(Even)).Match("1234"), "length is even")
-	checkResultIsMatching(t, Length(Not(Even)).Match("123"), "length is not even")
-	checkResultIsMatching(t, Not(Length(Even)).Match("123"), "not length is even")
+	we := asserter.Using(t)
+	IsEven := Applying(func(n int, other...string) bool { return n&1 == 0 }, "IsEven")
+	ToLength := Applying(func(s string, other...int) int { return len(s) }, "ToLength")
+	ToString := Applying(func(i int, other... string) string { return fmt.Sprint(i) }, "ToString")
+	
+	ValueIsEven := IsEven(Is(True()))
+	LengthIsEven := ToString(ToLength(ValueIsEven))
+	
+	we.CheckThat(ValueIsEven.Match(123), DidNotMatch)
+	we.CheckThat(LengthIsEven.Match(123), DidNotMatch)
+	
+	we.CheckThat(ValueIsEven.Match(1234), Matched)
+	we.CheckThat(LengthIsEven.Match(1234), Matched)
+	
+	we.CheckThat(ValueIsEven.Match(124), Matched)
+	we.CheckThat(LengthIsEven.Match(124), DidNotMatch)
+	
+	we.CheckThat(ValueIsEven.Match(1233), DidNotMatch)
+	we.CheckThat(LengthIsEven.Match(1233), Matched)
+	
+	logSamples(t, ValueIsEven)
+	logSamples(t, LengthIsEven)
 }
 
 func Test_PanicWhen_onFunctionAcceptingInterface(t *testing.T) {
+	we := asserter.Using(t)
 	panicOnBools := PanicWhenApplying(func (v interface{}) {
 		if _, ok := v.(bool); ok {
 			panic("no bools!")
 		}
 	}, "DisallowBools")
 
-	checkResultIsNonMatching(t, panicOnBools.Match("true"), "shouldn't panic on string")
-	checkResultIsMatching(t, panicOnBools.Match(true), "should panic on bool")
+	we.CheckThat(panicOnBools.Match("true"), DidNotMatch)
+	we.CheckThat(panicOnBools.Match(true), Matched)
+	we.CheckThat(panicOnBools.Match(nil), DidNotMatch)
+	
+	logSamples(t, panicOnBools)
 }
 
 func Test_PanicWhen_onFunctionAcceptingBool(t *testing.T) {
-	panicOnNonTruthInvoked := false
-	panicOnNonTruth := PanicWhenApplying(func (b bool) {
-		panicOnNonTruthInvoked = true
+	we := asserter.Using(t)
+	
+	var functionInvoked bool
+	PanicOnFalse := PanicWhenApplying(func (b bool) {
+		functionInvoked = true
 		if !b { panic("Must be true") }
-	}, "RequireTruth")
+	}, "PanicOnFalse")
 
-	checkResultIsMatching(t, panicOnNonTruth.Match("true"), "should panic when can't invoke")
-	checkResultIsNonMatching(t, panicOnNonTruth.Match(true), "should invoke and not panic")
-	if !panicOnNonTruthInvoked {
-		t.Error("Didn't invoke panicOnNonTruth on true")
-	}
-	panicOnNonTruthInvoked = false
-	checkResultIsMatching(t, panicOnNonTruth.Match(false), "should invoke and panic")
-	if !panicOnNonTruthInvoked {
-		t.Error("Didn't invoke panicOnNonTruth on false")
-	}
+	functionInvoked = false
+	we.CheckThat(PanicOnFalse.Match("true"), Matched.
+		Comment("Should panic when can't invoke function"))
+	we.CheckFalse(functionInvoked, "Shouldn't have invoked function")
+	
+	functionInvoked = false
+	we.CheckThat(PanicOnFalse.Match(nil), Matched.
+		Comment("Can't invoke function with string"))
+	we.CheckFalse(functionInvoked, "Shouldn't have invoked function")
+	
+	functionInvoked = false
+	we.CheckThat(PanicOnFalse.Match(true), DidNotMatch)
+	we.CheckTrue(functionInvoked, "Should have invoked function")
+	
+	functionInvoked = false
+	we.CheckThat(PanicOnFalse.Match(false), Matched)
+	we.CheckTrue(functionInvoked, "Should have invoked function")
+
+	logSamples(t, PanicOnFalse)
 }
 
 func Test_PanicWhen_onFunctionAcceptingOneArgDotDotDot(t *testing.T) {
-	panicOn13Invoked := false
-	panicOn13 := PanicWhenApplying(func (args...int) {
-		panicOn13Invoked = true
+	we := asserter.Using(t)
+
+	var functionInvoked bool
+	PanicOn13 := PanicWhenApplying(func (args...int) {
+		functionInvoked = true
 		if args[0] == 13 {
 			panic("Superstition")
 		}
 	}, "Disallow13")
 
-	checkResultIsMatching(t, panicOn13.Match("thirteen"), "should panic when can't invoke")
-	checkResultIsNonMatching(t, panicOn13.Match(12), "should invoke and not panic")
-	if !panicOn13Invoked {
-		t.Error("Didn't invoke panicOn13 on 12")
-	}
-	panicOn13Invoked = false
-	checkResultIsMatching(t, panicOn13.Match(13), "should invoke and panic")
-	if !panicOn13Invoked {
-		t.Error("Didn't invoke panicOn13 on 13")
-	}
+	functionInvoked = false
+	we.CheckThat(PanicOn13.Match("thirteen"), Matched.
+		Comment("Should panic when can't invoke function"))
+	we.CheckFalse(functionInvoked, "Shouldn't have invoked function")
+	
+	functionInvoked = false
+	we.CheckThat(PanicOn13.Match(12), DidNotMatch)
+	we.CheckTrue(functionInvoked, "Should have invoked function")
+	
+	functionInvoked = false
+	we.CheckThat(PanicOn13.Match(13), Matched)
+	we.CheckTrue(functionInvoked, "Should have invoked function")
+
+	logSamples(t, PanicOn13)
 }
 
 func Test_PanicWhen_onFunctionAcceptingTwoArgsDotDotDot(t *testing.T) {
-	panicOn13Invoked := false
-	panicOn13 := PanicWhenApplying(func (arg int, why...string) {
-		panicOn13Invoked = true
+	we := asserter.Using(t)
+
+	var functionInvoked bool
+	PanicOn13 := PanicWhenApplying(func (arg int, why...string) {
+		functionInvoked = true
 		if arg == 13 {
 			panic("Superstition")
 		}
 	}, "Disallow13")
 
-	checkResultIsMatching(t, panicOn13.Match("thirteen"), "should panic when can't invoke")
-	checkResultIsNonMatching(t, panicOn13.Match(12), "should invoke and not panic")
-	if !panicOn13Invoked {
-		t.Error("Didn't invoke panicOn13 on 12")
-	}
-	panicOn13Invoked = false
-	checkResultIsMatching(t, panicOn13.Match(13), "should invoke and panic")
-	if !panicOn13Invoked {
-		t.Error("Didn't invoke panicOn13 on 13")
-	}
+	functionInvoked = false
+	we.CheckThat(PanicOn13.Match("thirteen"), Matched.
+		Comment("Should panic when can't invoke function"))
+	we.CheckFalse(functionInvoked, "Shouldn't have invoked function")
+	
+	functionInvoked = false
+	we.CheckThat(PanicOn13.Match(12), DidNotMatch)
+	we.CheckTrue(functionInvoked, "Should have invoked function")
+	
+	functionInvoked = false
+	we.CheckThat(PanicOn13.Match(13), Matched)
+	we.CheckTrue(functionInvoked, "Should have invoked function")
+
+	logSamples(t, PanicOn13)
 }
 
 
