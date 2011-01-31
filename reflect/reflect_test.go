@@ -135,80 +135,67 @@ func Test_Uint64(t *testing.T) {
 	we.CheckThat(uint(1), ToType(Is(Not(Uint64Type()))))
 }
 
-func Test_Float(t *testing.T) {
+func Test_Float32(t *testing.T) {
 	we := asserter.Using(t)
 	checkMatch := func(v interface{}) {
-		we.CheckThat(v, Is(Float()))
-		we.CheckThat(v, ToType(Is(FloatType())))
+		we.CheckThat(v, Is(Float32()))
+		we.CheckThat(v, ToType(Is(Float32Type())))
 	}
 	checkNonMatch := func(v interface{}) {
-		we.CheckThat(v, Is(Not(Float())))
-		we.CheckThat(v, ToType(Is(Not(FloatType()))))
+		we.CheckThat(v, Is(Not(Float32())))
+		we.CheckThat(v, ToType(Is(Not(Float32Type()))))
 	}
-	checkMatch(1.0)
+	checkMatch(float32(1.0))
 	checkNonMatch("1.0")
 	checkNonMatch(0)
-	checkMatch(0.0)
-	checkNonMatch(0i)
+	checkNonMatch(float64(0.0))
+	checkNonMatch(complex64(0))
 	checkNonMatch(nil)
 	checkNonMatch(true)
 	checkNonMatch(interface{}(nil))
-}
-
-func Test_Float32(t *testing.T) {
-	we := asserter.Using(t)
-	we.CheckThat(float32(1.0), Is(Float32()))
-	we.CheckThat(float32(1.0), ToType(Is(Float32Type())))
-	we.CheckThat(float(1.0), Is(Not(Float32())))
-	we.CheckThat(float(1.0), ToType(Is(Not(Float32Type()))))
 }
 
 func Test_Float64(t *testing.T) {
 	we := asserter.Using(t)
 	we.CheckThat(float64(1.0), Is(Float64()))
 	we.CheckThat(float64(1.0), ToType(Is(Float64Type())))
-	we.CheckThat(float(1.0), Is(Not(Float64())))
-	we.CheckThat(float(1.0), ToType(Is(Not(Float64Type()))))
-}
-
-func Test_Complex(t *testing.T) {
-	we := asserter.Using(t)
-	checkMatch := func(v interface{}) {
-		we.CheckThat(v, Is(Complex()))
-		we.CheckThat(v, ToType(Is(ComplexType())))
-	}
-	checkNonMatch := func(v interface{}) {
-		we.CheckThat(v, Is(Not(Complex())))
-		we.CheckThat(v, ToType(Is(Not(ComplexType()))))
-	}
-	checkMatch(0i)
-	checkMatch(0.0i)
-	checkMatch(1i)
-	checkMatch(1.0i)
-	checkMatch(1+1i)
-	checkMatch(1.0+1.0i)
-	checkNonMatch("1+0i")
-	checkNonMatch(1)
-	checkNonMatch(1.0)
-	checkNonMatch(nil)
-	checkNonMatch(true)
-	checkNonMatch(interface{}(nil))
+	we.CheckThat(float32(1.0), Is(Not(Float64())))
+	we.CheckThat(float32(1.0), ToType(Is(Not(Float64Type()))))
+	we.CheckThat(complex128(1.0), Is(Not(Float64())))
+	we.CheckThat(complex128(1.0), ToType(Is(Not(Float64Type()))))
 }
 
 func Test_Complex64(t *testing.T) {
 	we := asserter.Using(t)
-	we.CheckThat(complex64(1.0), Is(Complex64()))
-	we.CheckThat(complex64(1.0), ToType(Is(Complex64Type())))
-	we.CheckThat(complex(1.0), Is(Not(Complex64())))
-	we.CheckThat(complex(1.0), ToType(Is(Not(Complex64Type()))))
+	checkMatch := func(v interface{}) {
+		we.CheckThat(v, Is(Complex64()))
+		we.CheckThat(v, ToType(Is(Complex64Type())))
+	}
+	checkNonMatch := func(v interface{}) {
+		we.CheckThat(v, Is(Not(Complex64())))
+		we.CheckThat(v, ToType(Is(Not(Complex64Type()))))
+	}
+	checkMatch(complex64(1.0))
+	checkMatch(complex64(1.0i))
+	checkNonMatch("1+0i")
+	checkNonMatch(1)
+	checkNonMatch(float32(1.0))
+	checkNonMatch(float64(1.0))
+	checkNonMatch(complex128(1.0))
+	checkNonMatch(complex128(1.0))
+	checkNonMatch(nil)
+	checkNonMatch(true)
+	checkNonMatch(interface{}(nil))
 }
 
 func Test_Complex128(t *testing.T) {
 	we := asserter.Using(t)
 	we.CheckThat(complex128(1.0i), Is(Complex128()))
 	we.CheckThat(complex128(1.0i), ToType(Is(Complex128Type())))
-	we.CheckThat(complex(1.0i), Is(Not(Complex128())))
-	we.CheckThat(complex(1.0i), ToType(Is(Not(Complex128Type()))))
+	we.CheckThat(complex64(1.0i), Is(Not(Complex128())))
+	we.CheckThat(complex64(1.0i), ToType(Is(Not(Complex128Type()))))
+	we.CheckThat(float64(1.0), Is(Not(Complex128())))
+	we.CheckThat(float64(1.0), ToType(Is(Not(Complex128Type()))))
 }
 
 func Test_String(t *testing.T) {

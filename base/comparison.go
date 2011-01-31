@@ -132,16 +132,6 @@ func _Compare(x interface{}, y interface{}) _Comparison {
 			}
 		default: return _INCOMPARABLE_TYPES
 		}
-	case float:
-		switch j := y.(type) {
-		case float:
-			if i < j { return _LESS_THAN
-			} else if i > j { return _GREATER_THAN
-			} else if i == j { return _ORDERED_EQUAL_TO
-			} else { return _UNORDERED_NOT_EQUAL_TO
-			}
-		default: return _INCOMPARABLE_TYPES
-		}
 	case float32:
 		switch j := y.(type) {
 		case float32:

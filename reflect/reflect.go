@@ -94,10 +94,6 @@ var (
 	uintptrMatcher = _TypeMatcher("Uintptr", uintptrType)
 	uintptrTypeMatcher = DeepEqualTo(uintptrType)
 	
-	floatType = reflect.Typeof(float(0))
-	floatMatcher = _TypeMatcher("Float", floatType)
-	floatTypeMatcher = DeepEqualTo(floatType)
-	
 	float32Type = reflect.Typeof(float32(0))
 	float32Matcher = _TypeMatcher("Float32", float32Type)
 	float32TypeMatcher = DeepEqualTo(float32Type)
@@ -106,7 +102,7 @@ var (
 	float64Matcher = _TypeMatcher("Float64", float64Type)
 	float64TypeMatcher = DeepEqualTo(float64Type)
 
-	complexType = reflect.Typeof(complex(0i))
+	complexType = reflect.Typeof(complex(0, 0i))
 	complexMatcher = _TypeMatcher("Complex", complexType)
 	complexTypeMatcher = DeepEqualTo(complexType)
 
@@ -134,7 +130,6 @@ func Uint8() *base.Matcher { return uint8Matcher }
 func Uint16() *base.Matcher { return uint16Matcher }
 func Uint32() *base.Matcher { return uint32Matcher }
 func Uint64() *base.Matcher { return uint64Matcher }
-func Float() *base.Matcher { return floatMatcher }
 func Float32() *base.Matcher { return float32Matcher }
 func Float64() *base.Matcher { return float64Matcher }
 func Complex() *base.Matcher { return complexMatcher }
@@ -153,7 +148,6 @@ func Uint8Type() *base.Matcher { return uint8TypeMatcher }
 func Uint16Type() *base.Matcher { return uint16TypeMatcher }
 func Uint32Type() *base.Matcher { return uint32TypeMatcher }
 func Uint64Type() *base.Matcher { return uint64TypeMatcher }
-func FloatType() *base.Matcher { return floatTypeMatcher }
 func Float32Type() *base.Matcher { return float32TypeMatcher }
 func Float64Type() *base.Matcher { return float64TypeMatcher }
 func ComplexType() *base.Matcher { return complexTypeMatcher }

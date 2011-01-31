@@ -55,8 +55,8 @@ func init() {
 		false,
 		int(42), int8(42), int16(42), int32(42), int64(42),
 		uint(42), uint8(42), uint16(42), uint32(42), uint64(42), 
-		float(42), float32(42), float64(42),
-		complex(42), complex64(42), complex128(42),
+		float32(42), float64(42),
+		complex(42,42), complex64(42), complex128(42),
 		"42",
 		struct {Field int} {Field:42},
 		&struct {Field int} {Field:42},
@@ -161,7 +161,7 @@ func Test_DeepEqualTo(t *testing.T) {
 	we := asserter.Using(t)
 	data := []interface{} {
 		nil, true, false,
-		int(42), uint(42), float(42), complex(42),
+		int(42), uint(42), float64(42), complex128(42),
 		struct { x int } { x: 42 },
 		struct { x int } { x: 42 },
 		&struct { x int } { x: 42 },

@@ -129,7 +129,6 @@ func TestOrderingOfTypes(t *testing.T) {
 	checkOrderingOfOneAndTwo(we, uint16(1), uint16(2))
 	checkOrderingOfOneAndTwo(we, uint32(1), uint32(2))
 	checkOrderingOfOneAndTwo(we, uint64(1), uint64(2))
-	checkOrderingOfOneAndTwo(we, float(1), float(2))
 	checkOrderingOfOneAndTwo(we, float32(1), float32(2))
 	checkOrderingOfOneAndTwo(we, float64(1), float64(2))
 	checkOrderingOfOneAndTwo(we, string("1"), string("2"))
