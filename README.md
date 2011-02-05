@@ -23,8 +23,8 @@ Packages
 *   `hamcrest/core`:  Defines a set of Matchers for doing basic comparisons,
     equality testing, nil checking, and grouping/composition matchers.
 
-*   `hamcrest/collections`:  Matchers on arrays/slices/maps, such as
-    `EachElement`, `EveryElement`, `EachMapElement`, `EveryMapElement`.
+*   `hamcrest/slices`:  Matchers on slices, such as `EachElem`, `AnyElem`,
+    `ToLen`, `Empty`.
 
 *   `hamcrest/reflect`:  Matchers using type reflection, such as `ToType`,
     `SameTypeAs`, `SliceOf`, `MapOf`, etc.
@@ -42,86 +42,6 @@ Packages
 
 You may also choose to write your own Matchers (see *Custom matchers*, below).
 
-
-Example of using Hamcrest at runtime:
-=====================================
-
-Create an `Asserter`.  The simplest way to do this is with the factory
-method `UsingStderr()`, which returns an `Asserter` that logs problems to
-stderr and calls `panic` on `FailNow`:
-
-	import (
-		"github.com/rdrdr/hamcrest/asserter"
-	)
-	
-	var we = asserter.UsingStderr()
-
-Use that asserter during init() to make sure globals are properly
-initialized:
-
-	import (
-		"github.com/rdrdr/hamcrest/asserter"
-		"github.com/rdrdr/hamcrest/collections"
-		"github.com/rdrdr/hamcrest/core"
-		"github.com/rdrdr/hamcrest/strings"
-	)
-	var we = asserter.UsingStderr()
-	
-	type Server struct {
-		hostname string
-		port uint16
-	}
-	var servers = []Server {
-		{ "news.foo.com", 8000 },
-		{ "news.bar.com", 8888 },
-	}
-
-	func init() {
-		EveryElement := collections.EveryElement
-		ToHostname := core.Applying(func(s Server) string {
-			return s.hostname
-		}, "ToHostname")
-		IsInOneOfOurDomains := core.AnyOf(strings.HasSuffix(".foo.com"),
-		                                  strings.HasSuffix(".bar.com"))
-		
-		we.FailNowUnless(servers,
-			EveryElement(ToHostname(IsInOneOfOurDomains)))
-	}
-
-Or use the asserter at runtime to guarantee that a method's
-preconditions are met:
-
-	func WriteTo(filename string) bool {
-		we.AssertThat(filename, strings.EndsWith(".txt").
-			Comment("Files must have txt extension."))
-		// Use filename here.
-	}
-
-Or use it during development to write your tests in the same file as your code:
-
-	func PigLatin(input string) string {
-		...implementation...
-	}
-	
-	func init() {
-		we := asserter.UsingStderr()
-		we.AssertThat(PigLatin("testing"), EqualTo("esting-tay"))
-		we.AssertThat(PigLatin("made"), EqualTo("ade-may"))
-		we.AssertThat(PigLatin("easier"), EqualTo("easier-ay"))
-	}
-	
-This makes it easy to cut-and-paste each `init()` block into your
-testing suite.  While moving the block over, replace:
-
-	func init() {
-		we := asserter.UsingStderr()
-		...
-
-With an `Asserter` that uses the testing infrastructure:
-
-	func Test_PigLatin(t *testing.T) {
-		we := asserter.Using(t)
-		...
 
 How to use hamcrest for testing:
 ================================
@@ -167,6 +87,93 @@ messages are detailed.
 Effort invested in good self-describing matchers can be leveraged
 across many tests.
 
+
+Example of using Hamcrest at runtime:
+=====================================
+
+Just as in the testing example, create an `Asserter`, but use a factory
+method such as `UsingStderr()`, which returns an `Asserter` that logs
+problems to stderr and calls `panic` on `FailNow`:
+
+	import (
+		"github.com/rdrdr/hamcrest/asserter"
+	)
+	
+	var we = asserter.UsingStderr()
+
+Use that asserter during init() to make sure globals are properly
+initialized:
+
+	import (
+		"github.com/rdrdr/hamcrest/asserter"
+		"github.com/rdrdr/hamcrest/slices"
+		. "github.com/rdrdr/hamcrest/core"
+		"github.com/rdrdr/hamcrest/strings"
+	)
+	var we = asserter.UsingStderr()
+	
+	type Server struct {
+		hostname string
+		port uint16
+	}
+	var servers = []Server {
+		{ "news.foo.com", 8000 },
+		{ "news.bar.com", 8888 },
+	}
+
+	func init() {
+		ToHostname := Applying(func(s Server) string {
+			return s.hostname
+		}, "TransformServerToHostname")
+		IsInOneOfOurDomains := AnyOf(strings.HasSuffix(".foo.com"),
+	                                 strings.HasSuffix(".bar.com"))
+		we.FailNowUnless(servers,
+			slices.EachElem(ToHostname(IsInOneOfOurDomains)))
+	}
+
+Or use the asserter at runtime to guarantee that a method's
+preconditions are met:
+
+	var IsValidFilenameForTextFile = AllOf(
+		strings.HasSuffix(".txt").Comment("Must have .txt extension."),
+		Not(strings.HasPattern("[ \\t\\n\\r]")).Comment("whitespace not permitted"),
+		Not(strings.HasPattern("[:////\\\\]")).Comment("path separators not permitted"))
+	
+	func WriteTo(filename string) bool {
+		we.AssertThat(filename, IsValidFilenameForTextFile)
+		// Use filename here.
+	}
+
+Or use it during development to write your tests in the same file as your code:
+
+	func EncodePigLatin(input string) string {
+		...implementation...
+	}
+	
+	func init() {
+		we := asserter.UsingStderr()
+		ToEncoded := Applying(EncodePigLatin, "in PigLatin form")
+		we.AssertThat("simple", ToEncoded(EqualTo("imple-say")))
+		we.AssertThat("Capital"), ToEncoded(EqualTo("Apital-Cay")))
+		we.AssertThat("prefix"), ToEncoded(EqualTo("efix-pray")))
+		we.AssertThat("oops"), ToEncoded(EqualTo("oops-ay")))
+		we.AssertThat("your psychotic y!"),
+			ToEncoded(EqualTo("our-yay ychotic-psay y-ay!")))
+	}
+
+At some future point, this structure will make it easier to cut-and-paste
+each `init()` block into your testing suite.  While moving the block over,
+replace:
+
+	func init() {
+		we := asserter.UsingStderr()
+		...
+
+With an `Asserter` that uses the testing infrastructure, instead:
+
+	func Test_EncodePigLatin(t *testing.T) {
+		we := asserter.Using(t)
+		...
 
 A note on library design:
 =========================
