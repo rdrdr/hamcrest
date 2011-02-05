@@ -235,14 +235,15 @@ func (self *WithPatternClause) EachMatch(matcher *base.Matcher) *base.Matcher {
 			return base.NewResultf(true,
 				"No occurrences of pattern \"%v\"", re)
 		}
+		groupOffset := 2 * self.group
 		for _, loc := range matches {
-			start, end := loc[0], loc[1]
+			start, end := loc[groupOffset], loc[groupOffset + 1]
 			substring := s[start:end]
 			result := matcher.Match(substring)
 			if !result.Matched() {
 				return base.NewResultf(false,
-					"did not match substring[%v:%v]=\"%v\" for pattern \"%v\"",
-					start, end, substring, re)
+					"did not match substring[%v:%v]=\"%v\" for pattern \"%v\" group %v",
+					start, end, substring, re, self.group)
 			}
 		}
 		return base.NewResultf(true,
@@ -267,15 +268,16 @@ func (self *WithPatternClause) AnyMatch(matcher *base.Matcher) *base.Matcher {
 			return base.NewResultf(false, "No occurrences of pattern \"%v\"", re)
 		}
 		occurrences := 0
+		groupOffset := 2 * self.group
 		for _, loc := range matches {
 			occurrences += 1
-			start, end := loc[0], loc[1]
+			start, end := loc[groupOffset], loc[groupOffset + 1]
 			substring := s[start:end]
 			result := matcher.Match(substring)
 			if result.Matched() {
 				return base.NewResultf(true,
-					"matched substring[%v:%v]=\"%v\" on pattern \"%v\"",
-					start, end, substring, re)
+					"matched substring[%v:%v]=\"%v\" on pattern \"%v\" group %v",
+					start, end, substring, re, self.group)
 			}
 		}
 		return base.NewResultf(false,
@@ -283,5 +285,38 @@ func (self *WithPatternClause) AnyMatch(matcher *base.Matcher) *base.Matcher {
 			occurrences, re)
 	}
 	return base.NewMatcherf(match, "AnyMatch[\"%v\"][%v]", re, matcher)
+}
+
+// Completes a matcher that finds every occurrence of a pattern in
+// the given input and applies the matcher to it, only matching if
+// there is exactly one occurrence, and the provided matcher matches
+// that occurrence.  For example:
+//     treasure := WithPattern("x+").TheMatch(ToLen(Equals(1)))
+// will match:
+//     "..x.."
+// but not:
+//     "..y.." because there are no occurrences of the pattern
+//     "..x..x.." because there are more than one occurrences of the pattern
+//     "..xx.." because the ToLen matcher does not match
+func (self *WithPatternClause) TheMatch(matcher *base.Matcher) *base.Matcher {
+	re := self.re
+	match := func (s string) *base.Result {
+		matches := re.FindAllStringIndex(s, 2)
+		if matches == nil {
+			return base.NewResultf(false, "No occurrences of pattern \"%v\"", re)
+		}
+		if len(matches) > 1 {
+			return base.NewResultf(false, "Multiple occurrences of pattern \"%v\"", re)
+		}
+		loc := matches[0]
+		groupOffset := 2 * self.group
+		start, end := loc[groupOffset], loc[groupOffset + 1]
+		substring := s[start:end]
+		result := matcher.Match(substring)
+		return base.NewResultf(result.Matched(),
+			"Matched substring[%v:%v]=\"%v\" on pattern \"%v\" group %v",
+				start, end, substring, re, self.group)
+	}
+	return base.NewMatcherf(match, "TheMatch[\"%v\"][%v]", re, matcher)
 }
 
