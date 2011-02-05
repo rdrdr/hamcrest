@@ -192,7 +192,8 @@ func (self *_Asserter) Failed() bool {
 func safeMatch(value interface{}, matcher *base.Matcher) (result *base.Result) {
 	defer func() {
 		if x := recover(); x != nil {
-			result = base.NewResultf(false, "Panic: %v", x)
+			result = base.NewResultf(false, "Panic: %v", x).
+				WithMatcherAndValue(matcher, value)
 		}
 	}()
 	result = matcher.Match(value)
