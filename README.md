@@ -23,8 +23,8 @@ Packages
 *   `hamcrest/core`:  Defines a set of Matchers for doing basic comparisons,
     equality testing, nil checking, and grouping/composition matchers.
 
-*   `hamcrest/collections`:  Matchers on arrays/slices/maps, such as
-    `EachElement`, `EveryElement`, `EachMapElement`, `EveryMapElement`.
+*   `hamcrest/slices`:  Matchers on slices, such as `EachElem`, `AnyElem`,
+    `ToLen`, `Empty`.
 
 *   `hamcrest/reflect`:  Matchers using type reflection, such as `ToType`,
     `SameTypeAs`, `SliceOf`, `MapOf`, etc.
@@ -61,8 +61,8 @@ initialized:
 
 	import (
 		"github.com/rdrdr/hamcrest/asserter"
-		"github.com/rdrdr/hamcrest/collections"
-		"github.com/rdrdr/hamcrest/core"
+		"github.com/rdrdr/hamcrest/slices"
+		. "github.com/rdrdr/hamcrest/core"
 		"github.com/rdrdr/hamcrest/strings"
 	)
 	var we = asserter.UsingStderr()
@@ -77,37 +77,43 @@ initialized:
 	}
 
 	func init() {
-		EveryElement := collections.EveryElement
-		ToHostname := core.Applying(func(s Server) string {
+		ToHostname := Applying(func(s Server) string {
 			return s.hostname
-		}, "ToHostname")
-		IsInOneOfOurDomains := core.AnyOf(strings.HasSuffix(".foo.com"),
-		                                  strings.HasSuffix(".bar.com"))
-		
+		}, "TransformServerToHostname")
+		IsInOneOfOurDomains := AnyOf(strings.HasSuffix(".foo.com"),
+	                                 strings.HasSuffix(".bar.com"))
 		we.FailNowUnless(servers,
-			EveryElement(ToHostname(IsInOneOfOurDomains)))
+			slices.EachElem(ToHostname(IsInOneOfOurDomains)))
 	}
 
 Or use the asserter at runtime to guarantee that a method's
 preconditions are met:
 
+	var IsValidFilenameForTextFile = AllOf(
+		strings.HasSuffix(".txt").Comment("Must have .txt extension."),
+		Not(strings.HasPattern("[ \\t\\n\\r]")).Comment("whitespace not permitted"),
+		Not(strings.HasPattern("[:////\\\\]")).Comment("path separators not permitted"))
+	
 	func WriteTo(filename string) bool {
-		we.AssertThat(filename, strings.EndsWith(".txt").
-			Comment("Files must have txt extension."))
+		we.AssertThat(filename, IsValidFilenameForTextFile)
 		// Use filename here.
 	}
 
 Or use it during development to write your tests in the same file as your code:
 
-	func PigLatin(input string) string {
+	func EncodePigLatin(input string) string {
 		...implementation...
 	}
 	
 	func init() {
 		we := asserter.UsingStderr()
-		we.AssertThat(PigLatin("testing"), EqualTo("esting-tay"))
-		we.AssertThat(PigLatin("made"), EqualTo("ade-may"))
-		we.AssertThat(PigLatin("easier"), EqualTo("easier-ay"))
+		ToEncoded := Applying(EncodePigLatin, "in PigLatin form")
+		we.AssertThat("simple", ToEncoded(EqualTo("imple-say")))
+		we.AssertThat("Capital"), ToEncoded(EqualTo("Apital-Cay")))
+		we.AssertThat("prefix"), ToEncoded(EqualTo("efix-pray")))
+		we.AssertThat("oops"), ToEncoded(EqualTo("oops-ay")))
+		we.AssertThat("your psychotic y!"),
+			ToEncoded(EqualTo("our-yay ychotic-psay y-ay!")))
 	}
 	
 This makes it easy to cut-and-paste each `init()` block into your
@@ -119,7 +125,7 @@ testing suite.  While moving the block over, replace:
 
 With an `Asserter` that uses the testing infrastructure:
 
-	func Test_PigLatin(t *testing.T) {
+	func Test_EncodePigLatin(t *testing.T) {
 		we := asserter.Using(t)
 		...
 
