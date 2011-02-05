@@ -98,8 +98,14 @@ func PanicWhenApplying(functionOrMatcher interface{}, name string) *base.Matcher
 func Not(matcher *base.Matcher) *base.Matcher {
 	match := func (actual interface{}) *base.Result {
 		result := matcher.Match(actual)
-		return base.NewResult(!result.Matched(), result).
-			WithCauses(result.Causes()...)
+		if result.Matched() {
+			return base.NewResultf(false,
+				"'Not' failed because inner matcher passed: %v", matcher).
+				WithCauses(result)
+		}
+		return base.NewResultf(true,
+			"'Not' passed because inner matcher failed: %v", matcher).
+			WithCauses(result)
 	}
 	return base.NewMatcherf(match, "Not[%v]", matcher)
 }
