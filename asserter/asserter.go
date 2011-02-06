@@ -244,8 +244,15 @@ func (self *_Asserter) _LogResult(indent string, result *base.Result) {
 	for _, comment := range matcher.Comments() {
 		logger.Logf("%vComment: %v\n", detailsIndent, comment)
 	}
-	for _, cause := range result.Causes() {
-		self._LogResult(detailsIndent, cause)
+	if causes := result.Causes(); len(causes) > 0 {
+		if len(causes) == 1 {
+			logger.Logf("%vCauses: (1 cause)\n", detailsIndent)
+		} else {
+			logger.Logf("%vCauses: (%v causes)\n", detailsIndent, len(causes))
+		}
+		for _, cause := range result.Causes() {
+			self._LogResult(detailsIndent, cause)
+		}
 	}
 	switch w := self.logger.(type) {
 	case _Flusher1: w.Flush()
