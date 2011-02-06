@@ -113,10 +113,27 @@ func UsingWriterAndFailNow(writer io.Writer, failNow func()) Asserter {
 	return Using(&_LoggerUsingWriter{writer:writer, failNow:failNow, failed:false})
 }
 
-// Convenience function to create an Asserter for standard
-// error, as per UsingWriter().
+// Convenience function to create an Asserter for stderr,
+// as per UsingWriter().
 func UsingStderr() Asserter {
 	return UsingWriter(os.Stderr)
+}
+
+// Convenience function to create an Asserter for stdout,
+// as per UsingWriter().
+func UsingStdout() Asserter {
+	return UsingWriter(os.Stdout)
+}
+
+// Convenience function to create an Asserter for stdout,
+// as per UsingWriter().
+func UsingFileNamed(filename string) Asserter {
+	fileFlags := os.O_CREATE | os.O_APPEND | os.O_WRONLY | os.O_NONBLOCK
+	f, err := os.Open(filename, fileFlags, 0666)
+	if err != nil {
+		panic("Can't open file named " + filename)
+	}
+	return UsingWriter(f)
 }
 
 // Convenience function to return an Asserter for which every
@@ -128,6 +145,9 @@ func ThatDoesNothing() Asserter {
 // --------------------------------------------------------------------
 // Implementation
 // --------------------------------------------------------------------
+
+type _Flusher1 interface { Flush() }
+type _Flusher2 interface { Flush() os.Error }
 
 type _LoggerUsingWriter struct {
 	writer io.Writer
@@ -147,6 +167,13 @@ func (self *_LoggerUsingWriter) Fail() {
 func (self *_LoggerUsingWriter) FailNow() {
 	self.failed = true
 	self.failNow()
+}
+
+func (self *_LoggerUsingWriter) Flush() {
+	switch w := self.writer.(type) {
+	case _Flusher1: w.Flush()
+	case _Flusher2: w.Flush()
+	}
 }
 
 
@@ -205,19 +232,24 @@ func safeMatch(value interface{}, matcher *base.Matcher) (result *base.Result) {
 func (self *_Asserter) _LogResult(indent string, result *base.Result) {
 	matcher := result.Matcher()
 	value := result.Value()
+	logger := self.logger
 	if result.Matched() {
-		self.logger.Logf("%vMATCHED input %v\n", indent, value)
+		logger.Logf("%vMATCHED input %v\n", indent, value)
 	} else {
-		self.logger.Logf("%vDID NOT MATCH input %v\n", indent, value)
+		logger.Logf("%vDID NOT MATCH input %v\n", indent, value)
 	}
-	self.logger.Logf("%vMatcher: %v\n", indent, matcher)
-	self.logger.Logf("%vBecause: %v\n", indent, result)
+	detailsIndent := indent + "\t"
+	logger.Logf("%vMatcher: %v\n", detailsIndent, matcher)
+	logger.Logf("%vBecause: %v\n", detailsIndent, result)
 	for _, comment := range matcher.Comments() {
-		self.logger.Logf("%vComment: %v\n", indent, comment)
+		logger.Logf("%vComment: %v\n", detailsIndent, comment)
 	}
-	causeIndent := indent + "\t"
 	for _, cause := range result.Causes() {
-		self._LogResult(causeIndent, cause)
+		self._LogResult(detailsIndent, cause)
+	}
+	switch w := self.logger.(type) {
+	case _Flusher1: w.Flush()
+	case _Flusher2: w.Flush()
 	}
 }
 
