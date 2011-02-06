@@ -230,7 +230,7 @@ func (self *WithPatternClause) Group(index int) *WithPatternClause {
 func (self *WithPatternClause) EachMatch(matcher *base.Matcher) *base.Matcher {
 	re := self.re
 	match := func (s string) *base.Result {
-		matches := re.FindAllStringIndex(s, -1)
+		matches := re.FindAllStringSubmatchIndex(s, -1)
 		if matches == nil {
 			return base.NewResultf(true,
 				"No occurrences of pattern \"%v\"", re)
@@ -249,6 +249,10 @@ func (self *WithPatternClause) EachMatch(matcher *base.Matcher) *base.Matcher {
 		return base.NewResultf(true,
 			"Matched all occurrences of pattern \"%v\"", re)
 	}
+	if self.group != 0 {
+		return base.NewMatcherf(match,
+			"EachMatch[\"%v\"][Group=%v][%v]", re, self.group, matcher)
+	}
 	return base.NewMatcherf(match, "EachMatch[\"%v\"][%v]", re, matcher)
 }
 
@@ -263,7 +267,7 @@ func (self *WithPatternClause) EachMatch(matcher *base.Matcher) *base.Matcher {
 func (self *WithPatternClause) AnyMatch(matcher *base.Matcher) *base.Matcher {
 	re := self.re
 	match := func (s string) *base.Result {
-		matches := re.FindAllStringIndex(s, -1)
+		matches := re.FindAllStringSubmatchIndex(s, -1)
 		if matches == nil {
 			return base.NewResultf(false, "No occurrences of pattern \"%v\"", re)
 		}
@@ -284,6 +288,10 @@ func (self *WithPatternClause) AnyMatch(matcher *base.Matcher) *base.Matcher {
 			"Matched none of the %v occurrences of pattern \"%v\"",
 			occurrences, re)
 	}
+	if self.group != 0 {
+		return base.NewMatcherf(match,
+			"AnyMatch[\"%v\"][Group=%v][%v]", re, self.group, matcher)
+	}
 	return base.NewMatcherf(match, "AnyMatch[\"%v\"][%v]", re, matcher)
 }
 
@@ -301,7 +309,7 @@ func (self *WithPatternClause) AnyMatch(matcher *base.Matcher) *base.Matcher {
 func (self *WithPatternClause) TheMatch(matcher *base.Matcher) *base.Matcher {
 	re := self.re
 	match := func (s string) *base.Result {
-		matches := re.FindAllStringIndex(s, 2)
+		matches := re.FindAllStringSubmatchIndex(s, -1)
 		if matches == nil {
 			return base.NewResultf(false, "No occurrences of pattern \"%v\"", re)
 		}
@@ -316,6 +324,10 @@ func (self *WithPatternClause) TheMatch(matcher *base.Matcher) *base.Matcher {
 		return base.NewResultf(result.Matched(),
 			"Matched substring[%v:%v]=\"%v\" on pattern \"%v\" group %v",
 				start, end, substring, re, self.group)
+	}
+	if self.group != 0 {
+		return base.NewMatcherf(match,
+			"TheMatch[\"%v\"][Group=%v][%v]", re, self.group, matcher)
 	}
 	return base.NewMatcherf(match, "TheMatch[\"%v\"][%v]", re, matcher)
 }
