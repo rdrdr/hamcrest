@@ -21,7 +21,10 @@ var _Matched *Matcher // singleton
 func init() {
 	match := func (actual interface{}) *Result {
 		if result, ok := actual.(*Result); ok {
-			return NewResultf(result.Matched(), "was a result").WithCauses(result)
+			if result.Matched() {
+				return NewResultf(true, "was a matching result").WithCauses(result)
+			}
+			return NewResultf(false, "was a result that did not match").WithCauses(result)
 		}
 		return NewResultf(false, "[%v] was not a result", actual)
 	}
@@ -36,7 +39,10 @@ var _DidNotMatch *Matcher // singleton
 func init() {
 	match := func (actual interface{}) *Result {
 		if result, ok := actual.(*Result); ok {
-			return NewResultf(!result.Matched(), "was a result").WithCauses(result)
+			if result.Matched() {
+				return NewResultf(false, "was a matching result").WithCauses(result)
+			}
+			return NewResultf(true, "was a result that did not match").WithCauses(result)
 		}
 		return NewResultf(false, "[%v] was not a result", actual)
 	}
