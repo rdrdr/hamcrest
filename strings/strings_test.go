@@ -157,9 +157,9 @@ func Test_HasPattern(t *testing.T) {
 	we.CheckThat(HasPattern("[xy]").Match("abcd"), DidNotMatch)
 }
 
-func Test_WithPattern_EachMatch(t *testing.T) {
+func Test_EachPattern(t *testing.T) {
 	we := asserter.Using(t)
-	eachGoPlusIsGoo := WithPattern("go+").EachMatch(Is(EqualTo("goo")))
+	eachGoPlusIsGoo := EachPattern("go+")(Is(EqualTo("goo")))
 	we.CheckThat(eachGoPlusIsGoo.Match("stop stop stop"), Matched)
 	we.CheckThat(eachGoPlusIsGoo.Match("goo goo goo"), Matched)
 	we.CheckThat(eachGoPlusIsGoo.Match("goo go goo"), DidNotMatch)
@@ -167,15 +167,28 @@ func Test_WithPattern_EachMatch(t *testing.T) {
 	we.CheckThat(eachGoPlusIsGoo.Match(123), DidNotMatch)
 	we.CheckThat(eachGoPlusIsGoo.Match(nil), DidNotMatch)
 	
-	i_before_e := WithPattern("[^aeiou]ei").EachMatch(HasPrefix("c"))
+	i_before_e := EachPattern("[^aeiou]ei")(HasPrefix("c"))
 	we.CheckThat("ceiling receipt", i_before_e)
 	we.CheckThat("deceiver seizure", Not(i_before_e))
 }
 
-func Test_ExtractPattern_Any(t *testing.T) {
+func Test_EachPatternGroup(t *testing.T) {
+	we := asserter.Using(t)
+	eachQHasU := EachPatternGroup("([qQ])(.)", 2)(ToLower(EqualTo("u")))
+	we.CheckThat(eachQHasU.Match("Quick quack MQ"), Matched)
+	we.CheckThat(eachQHasU.Match("Quick FAQ for MQ"), DidNotMatch)
+	we.CheckThat(eachQHasU.Match(123), DidNotMatch)
+	we.CheckThat(eachQHasU.Match(nil), DidNotMatch)
+	
+	ei_after_c := EachPatternGroup("[cC](ei|ie)", 1)(EqualTo("ei"))
+	we.CheckThat(ei_after_c.Match("Ceiling receipt"), Matched)
+	we.CheckThat(ei_after_c.Match("receive Cienfuegos"), DidNotMatch)
+}
+
+func Test_AnyPattern(t *testing.T) {
 	we := asserter.Using(t)
 	
-	anyGoPlusIsGoo := WithPattern("go+").AnyMatch(Is(EqualTo("goo")))
+	anyGoPlusIsGoo := AnyPattern("go+")(Is(EqualTo("goo")))
 	we.CheckThat(anyGoPlusIsGoo.Match("stop stop stop"), DidNotMatch)
 	we.CheckThat(anyGoPlusIsGoo.Match("goo goo goo"), Matched)
 	we.CheckThat(anyGoPlusIsGoo.Match("goo go goo"), Matched)
@@ -183,8 +196,27 @@ func Test_ExtractPattern_Any(t *testing.T) {
 	we.CheckThat(anyGoPlusIsGoo.Match(123), DidNotMatch)
 	we.CheckThat(anyGoPlusIsGoo.Match(nil), DidNotMatch)
 	
-	has_cat_word := WithPattern("[a-z]+at").AnyMatch(HasPrefix("c"))
+	has_cat_word := AnyPattern("[a-z]+at")(HasPrefix("c"))
 	we.CheckThat("that cravat is phat", has_cat_word)
 	we.CheckThat("Matt spat at a rat", Not(has_cat_word))
+}
+
+func Test_FirstInstanceOf(t *testing.T) {
+	we := asserter.Using(t)
+	
+	firstGoPlusIsGoo := FirstInstanceOf("Go+")(Is(EqualTo("Goo")))
+	we.CheckThat(firstGoPlusIsGoo.Match("take Google to Go"), Matched)
+	we.CheckThat(firstGoPlusIsGoo.Match("take Go to Google"), DidNotMatch)
+	we.CheckThat(firstGoPlusIsGoo.Match("Goooooooal"), DidNotMatch)
+	we.CheckThat(firstGoPlusIsGoo.Match("no big-G goo"), DidNotMatch)
+	we.CheckThat(firstGoPlusIsGoo.Match(123), DidNotMatch)
+	we.CheckThat(firstGoPlusIsGoo.Match(nil), DidNotMatch)
+	
+	his := FirstInstanceOf("h.s")(EqualTo("his"))
+	we.CheckThat(his.Match("hers and his"), Matched)
+	we.CheckThat(his.Match("just hers"), DidNotMatch.
+		Comment("no instances"))
+	we.CheckThat(his.Match("has chisel"), DidNotMatch.
+		Comment("second instance matches, but not first"))
 }
 

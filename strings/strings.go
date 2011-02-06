@@ -203,132 +203,161 @@ type WithPatternClause struct {
 	group int
 }
 
-func WithPattern(pattern string) *WithPatternClause {
-	return &WithPatternClause{re: regexp.MustCompile(pattern), group: 0 }
-}
-
+// Returns a short-circuiting function that applies the matcher to each
+// occurrence of the pattern in an input string, until a failing pattern
+// is found (in which case the output matcher fails to match) or all
+// matching instances are exhausted (in which case the output matcher
+// successfully matches).
 //
-//
-//
-func (self *WithPatternClause) Group(index int) *WithPatternClause {
-	numGroups := self.re.NumSubexp()
-	if index < 0 || index > numGroups {
-		panic(fmt.Sprintf("Group %v doesn't exist: only %v groups in re %v",
-			index, numGroups, self.re))
-	}
-	return &WithPatternClause{re: self.re, group: index }
-}
-
-// Completes a matcher that finds every occurrence of a pattern in the
-// given input and applies the matcher to it, only matching if every
-// occurrence matches.  For example:
-//    i_before_e_except := ToLower(WithPattern(".ei").Each(StartsWith("c")))
-// will match:
-//    "ceiling receipt"
+// For example:
+//    EachPattern("q.")(EqualTo("qu"))
+// would match:
+//    "quick quack mq" (two matches of "q.", both equal to "qu")
 // but not:
-//    "deceiver seizure"
-func (self *WithPatternClause) EachMatch(matcher *base.Matcher) *base.Matcher {
-	re := self.re
-	match := func (s string) *base.Result {
-		matches := re.FindAllStringSubmatchIndex(s, -1)
-		if matches == nil {
-			return base.NewResultf(true,
-				"No occurrences of pattern \"%v\"", re)
-		}
-		groupOffset := 2 * self.group
-		for _, loc := range matches {
-			start, end := loc[groupOffset], loc[groupOffset + 1]
-			substring := s[start:end]
-			result := matcher.Match(substring)
-			if !result.Matched() {
-				return base.NewResultf(false,
-					"did not match substring[%v:%v]=\"%v\" for pattern \"%v\" group %v",
-					start, end, substring, re, self.group)
-			}
-		}
-		return base.NewResultf(true,
-			"Matched all occurrences of pattern \"%v\"", re)
-	}
-	if self.group != 0 {
-		return base.NewMatcherf(match,
-			"EachMatch[\"%v\"][Group=%v][%v]", re, self.group, matcher)
-	}
-	return base.NewMatcherf(match, "EachMatch[\"%v\"][%v]", re, matcher)
-}
-
-// Completes a matcher that finds every occurrence of a pattern in the
-// given input and applies the matcher to it, only matching if at least
-// one occurrence matches.  For example:
-//    here_kitty := WithPattern(".at").AnyMatch(StartsWith("c"))
-// will match:
-//    "that cat is phat"
-// but not:
-//    "Matt spat at a rat"
-func (self *WithPatternClause) AnyMatch(matcher *base.Matcher) *base.Matcher {
-	re := self.re
-	match := func (s string) *base.Result {
-		matches := re.FindAllStringSubmatchIndex(s, -1)
-		if matches == nil {
-			return base.NewResultf(false, "No occurrences of pattern \"%v\"", re)
-		}
-		occurrences := 0
-		groupOffset := 2 * self.group
-		for _, loc := range matches {
-			occurrences += 1
-			start, end := loc[groupOffset], loc[groupOffset + 1]
-			substring := s[start:end]
-			result := matcher.Match(substring)
-			if result.Matched() {
+//    "quick qs for mq" (two matches of "q.", second is not "qu")
+func EachPattern(pattern string) func(matcher *base.Matcher) *base.Matcher  {
+	re := regexp.MustCompile(pattern)
+	return func(matcher *base.Matcher) *base.Matcher {
+		match := func(s string) *base.Result {
+			matches := re.FindAllStringIndex(s, -1)
+			if matches == nil {
 				return base.NewResultf(true,
-					"matched substring[%v:%v]=\"%v\" on pattern \"%v\" group %v",
-					start, end, substring, re, self.group)
+					"No occurrences of pattern \"%v\"", pattern)
 			}
+			for index, loc := range matches {
+				start, end := loc[0], loc[1]
+				substring := s[start:end]
+				result := matcher.Match(substring)
+				if !result.Matched() {
+					return base.NewResultf(false,
+						"did not match substring[%v:%v]=\"%v\", occurrence #%v (of %v) of pattern \"%v\"",
+						start, end, substring, index+1, len(matches), pattern)
+				}
+			}
+			return base.NewResultf(true,
+				"Matched every occurrence (all %v) of pattern \"%v\"",
+				len(matches), pattern)
 		}
-		return base.NewResultf(false,
-			"Matched none of the %v occurrences of pattern \"%v\"",
-			occurrences, re)
-	}
-	if self.group != 0 {
 		return base.NewMatcherf(match,
-			"AnyMatch[\"%v\"][Group=%v][%v]", re, self.group, matcher)
+			"EachPattern[\"%v\"][%v]", pattern, matcher)
 	}
-	return base.NewMatcherf(match, "AnyMatch[\"%v\"][%v]", re, matcher)
 }
 
-// Completes a matcher that finds every occurrence of a pattern in
-// the given input and applies the matcher to it, only matching if
-// there is exactly one occurrence, and the provided matcher matches
-// that occurrence.  For example:
-//     treasure := WithPattern("x+").TheMatch(ToLen(Equals(1)))
-// will match:
-//     "..x.."
+// Returns a short-circuiting function that applies the matcher to each
+// occurrence of the pattern in an input string, until a failing pattern
+// is found (in which case the output matcher fails to match) or all
+// matching instances are exhausted (in which case the output matcher
+// successfully matches).
+//
+// For example:
+//    EachPattern("q.")(EqualTo("qu"))
+// would match:
+//    "quick quack mq" (two matches of "q.", both equal to "qu")
 // but not:
-//     "..y.." because there are no occurrences of the pattern
-//     "..x..x.." because there are more than one occurrences of the pattern
-//     "..xx.." because the ToLen matcher does not match
-func (self *WithPatternClause) TheMatch(matcher *base.Matcher) *base.Matcher {
-	re := self.re
-	match := func (s string) *base.Result {
-		matches := re.FindAllStringSubmatchIndex(s, -1)
-		if matches == nil {
-			return base.NewResultf(false, "No occurrences of pattern \"%v\"", re)
-		}
-		if len(matches) > 1 {
-			return base.NewResultf(false, "Multiple occurrences of pattern \"%v\"", re)
-		}
-		loc := matches[0]
-		groupOffset := 2 * self.group
-		start, end := loc[groupOffset], loc[groupOffset + 1]
-		substring := s[start:end]
-		result := matcher.Match(substring)
-		return base.NewResultf(result.Matched(),
-			"Matched substring[%v:%v]=\"%v\" on pattern \"%v\" group %v",
-				start, end, substring, re, self.group)
+//    "quick qs for mq" (two matches of "q.", second is not "qu")
+func EachPatternGroup(pattern string, group int) func(matcher *base.Matcher) *base.Matcher  {
+	re := regexp.MustCompile(pattern)
+	if num := re.NumSubexp(); num < group {
+		println("Illegal group #", group, ": there are only ", num, "groups.") 
+		panic("Group index out of bounds.")
 	}
-	if self.group != 0 {
+	return func(matcher *base.Matcher) *base.Matcher {
+		match := func(s string) *base.Result {
+			matches := re.FindAllStringSubmatchIndex(s, -1)
+			if matches == nil {
+				return base.NewResultf(true,
+					"No occurrences of pattern \"%v\"", pattern)
+			}
+			for index, loc := range matches {
+				start, end := loc[2*group], loc[2*group+1]
+				substring := s[start:end]
+				result := matcher.Match(substring)
+				if !result.Matched() {
+					prefix, suffix := s[loc[0]:start], s[end:loc[1]]
+					return base.NewResultf(false,
+						"did not match substring[%v:%v]=\"%v[%v]%v\", occurrence #%v (of %v) of pattern \"%v\"",
+						start, end, prefix, substring, suffix, index+1, len(matches), pattern)
+				}
+			}
+			return base.NewResultf(true,
+				"Matched every occurrence (all %v) of pattern \"%v\", group %v",
+				len(matches), pattern, group)
+		}
 		return base.NewMatcherf(match,
-			"TheMatch[\"%v\"][Group=%v][%v]", re, self.group, matcher)
+			"EachPatternGroup[\"%v\", %v][%v]", pattern, group, matcher)
 	}
-	return base.NewMatcherf(match, "TheMatch[\"%v\"][%v]", re, matcher)
+}
+
+
+// Returns a short-circuiting function that applies the matcher to each
+// occurrence of the pattern in an input string, until a matching pattern
+// is found (in which case the matcher successfully matches) or all
+// matching instances are exhausted (in which case the output matcher
+// fails to match).
+//
+// For example:
+//    AnyPattern("x.")(EqualTo("xy"))
+// would match:
+//    "six sax are sexy" (three matches of "x.", third is "xy")
+// but not:
+//    "pox pix are pixelated" (three matches of "x.", none is "xy")
+func AnyPattern(pattern string) func(matcher *base.Matcher) *base.Matcher  {
+	re := regexp.MustCompile(pattern)
+	return func(matcher *base.Matcher) *base.Matcher {
+		match := func(s string) *base.Result {
+			matches := re.FindAllStringIndex(s, -1)
+			if matches == nil {
+				return base.NewResultf(false,
+					"No occurrences of pattern \"%v\"", pattern)
+			}
+			
+			for index, loc := range matches {
+				start, end := loc[0], loc[1]
+				substring := s[start:end]
+				result := matcher.Match(substring)
+				if result.Matched() {
+					return base.NewResultf(true,
+						"matched substring[%v:%v]=\"%v\", occurrence #%v (of %v) of pattern \"%v\"",
+						start, end, substring, index+1, len(matches), pattern)
+				}
+			}
+			return base.NewResultf(false,
+				"Did not match any occurrence (of %v) of pattern \"%v\"",
+				len(matches), pattern)
+		}
+		return base.NewMatcherf(match,
+			"AnyPattern[\"%v\"][%v]", pattern, matcher)
+	}
+}
+
+// Returns a function that applies the matcher to the first occurrence of
+// the pattern in an input string.
+//
+// For example:
+//    FirstInstanceOf("h.s")(EqualTo("his"))
+// would match:
+//    "hers and his" (because the first instance of "h.s" is equal to "his")
+// but none of:
+//    "just hers" (no instances of "h.s")
+//    "has chisel" (the first instance of "h.s" is not "his")
+func FirstInstanceOf(pattern string) func(matcher *base.Matcher) *base.Matcher  {
+	re := regexp.MustCompile(pattern)
+	return func(matcher *base.Matcher) *base.Matcher {
+		match := func(s string) *base.Result {
+			matches := re.FindStringIndex(s)
+			if matches == nil {
+				return base.NewResultf(false,
+					"No occurrences of pattern \"%v\"", pattern)
+			}
+			start, end := matches[0], matches[1]
+			substring := s[start:end]
+			result := matcher.Match(substring)
+			return base.NewResultf(result.Matched(),
+				"Found substring[%v:%v]=\"%v\" for pattern \"%v\"",
+				start, end, substring, pattern).WithCauses(result)
+		}
+		return base.NewMatcherf(match,
+			"FirstInstanceOf[\"%v\"][%v]", pattern, matcher)
+	}
 }
 
