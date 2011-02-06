@@ -204,7 +204,7 @@ func Test_AllOf(t *testing.T) {
 	we.CheckThat(AllOf(no).Match(0), DidNotMatch.Comment("can fail one matcher"))
 	we.CheckThat(AllOf(yes, no, snoop).Match(0), DidNotMatch.Comment("can short-circuit"))
 	we.CheckFalse(calledSnoop, "AllOf should short-circuit on first non-match")
-	logSamples(t, AllOf(Not(True()), NonNil(), DeepEqualTo(42)))
+	logSamples(t, AllOf(Not(True()), NonNil(), EqualTo(42)))
 }
 
 func Test_AnyOf(t *testing.T) {
@@ -221,7 +221,7 @@ func Test_AnyOf(t *testing.T) {
 	we.CheckThat(AnyOf(no).Match(0), DidNotMatch.Comment("can fail one matcher"))
 	we.CheckThat(AnyOf(no, yes, snoop).Match(0), Matched.Comment("can short-circuit"))
 	we.CheckFalse(calledSnoop, "AnyOf should short-circuit on first match")
-	logSamples(t, AnyOf(True(), Nil(), DeepEqualTo(42)))
+	logSamples(t, AnyOf(True(), Nil(), EqualTo(42)))
 }
 
 func Test_Applying_onFunction_FromType_ToType(t *testing.T) {
