@@ -230,7 +230,6 @@ func safeMatch(value interface{}, matcher *base.Matcher) (result *base.Result) {
 
 // Insert final newline if needed and indent tabs after internal newlines.
 func (self *_Asserter) _LogResult(indent string, result *base.Result) {
-	matcher := result.Matcher()
 	value := result.Value()
 	logger := self.logger
 	if result.Matched() {
@@ -239,24 +238,29 @@ func (self *_Asserter) _LogResult(indent string, result *base.Result) {
 		logger.Logf("%vDID NOT MATCH input %v\n", indent, value)
 	}
 	detailsIndent := indent + "\t"
-	logger.Logf("%vMatcher: %v\n", detailsIndent, matcher)
+	matcher := result.Matcher()
+	if matcher != nil {
+		logger.Logf("%vMatcher: %v\n", detailsIndent, matcher)
+	}
 	logger.Logf("%vBecause: %v\n", detailsIndent, result)
-	for _, comment := range matcher.Comments() {
-		logger.Logf("%vComment: %v\n", detailsIndent, comment)
-	}
-	if causes := result.Causes(); len(causes) > 0 {
-		if len(causes) == 1 {
-			logger.Logf("%vCauses: (1 cause)\n", detailsIndent)
-		} else {
-			logger.Logf("%vCauses: (%v causes)\n", detailsIndent, len(causes))
+	if matcher != nil {
+		for _, comment := range matcher.Comments() {
+			logger.Logf("%vComment: %v\n", detailsIndent, comment)
 		}
-		for _, cause := range result.Causes() {
-			self._LogResult(detailsIndent, cause)
+		if causes := result.Causes(); len(causes) > 0 {
+			if len(causes) == 1 {
+				logger.Logf("%vCauses: (1 cause)\n", detailsIndent)
+			} else {
+				logger.Logf("%vCauses: (%v causes)\n", detailsIndent, len(causes))
+			}
+			for _, cause := range result.Causes() {
+				self._LogResult(detailsIndent, cause)
+			}
 		}
-	}
-	switch w := self.logger.(type) {
-	case _Flusher1: w.Flush()
-	case _Flusher2: w.Flush()
+		switch w := self.logger.(type) {
+		case _Flusher1: w.Flush()
+		case _Flusher2: w.Flush()
+		}
 	}
 }
 

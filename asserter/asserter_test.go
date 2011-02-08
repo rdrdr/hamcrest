@@ -85,6 +85,18 @@ var MATCHER = base.NewMatcherf(
 		return base.NewResultf(false, NONMATCHING_RESULT)
 	}, MATCHER_DESCRIPTION).Comment(MATCHER_COMMENT1, MATCHER_COMMENT2)
 
+
+func Test_LogResult(t *testing.T) {
+	comment := "pithy comment"
+	for _, matched := range []bool{true, false} {
+		buffer := newBuffer()
+		asserter := UsingWriter(buffer)
+		result := base.NewResultf(matched, comment)
+		asserter.LogResult(result)
+		checkBufferContainsStrings(t, buffer, comment)
+	}
+}
+
 func Test_LogWhen_onNonMatchingResult(t *testing.T) {
 	buffer := newBuffer()
 	asserter := UsingWriter(buffer)

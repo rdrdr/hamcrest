@@ -85,12 +85,19 @@ func (self *Result) Value() interface{} {
 
 // Implements fmt.Stringer.
 func (self *Result) String() string {
+	if self == nil {
+		return "<nil Result>"
+	}
 	return self.description.String()
 }
 
 // Implements fmt.Formatter.
 func (self *Result) Format(s fmt.State, ch int) {
-	self.description.Format(s, ch)
+	if self == nil {
+		fmt.Fprintf(s, self.String())
+	} else {
+		self.description.Format(s, ch)
+	}
 }
 
 // Returns a slice of sub-Results that caused this Result to
@@ -259,8 +266,9 @@ func normalizeMatchFunction(fn interface{}) func(interface{}) *Result {
 func (self *Matcher) Format(s fmt.State, ch int) {
 	if self == nil {
 		fmt.Fprintf(s, "<nil matcher>")
+	} else {
+		self.description.Format(s, ch)
 	}
-	self.description.Format(s, ch)
 }
 
 // Implementation of SelfDescribing: fmt.Stringer.
