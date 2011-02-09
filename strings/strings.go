@@ -243,18 +243,7 @@ func EachPattern(pattern string) func(matcher *base.Matcher) *base.Matcher  {
 	}
 }
 
-// Returns a short-circuiting function that applies the matcher to each
-// occurrence of the pattern in an input string, until a failing pattern
-// is found (in which case the output matcher fails to match) or all
-// matching instances are exhausted (in which case the output matcher
-// successfully matches).
-//
-// For example:
-//    EachPattern("q.")(EqualTo("qu"))
-// would match:
-//    "quick quack mq" (two matches of "q.", both equal to "qu")
-// but not:
-//    "quick qs for mq" (two matches of "q.", second is not "qu")
+// Variant of EachPattern() that uses the given subgroup of the pattern.
 func EachPatternGroup(pattern string, group int) func(matcher *base.Matcher) *base.Matcher  {
 	re := regexp.MustCompile(pattern)
 	if num := re.NumSubexp(); num < group {
@@ -269,14 +258,16 @@ func EachPatternGroup(pattern string, group int) func(matcher *base.Matcher) *ba
 					"No occurrences of pattern \"%v\"", pattern)
 			}
 			for index, loc := range matches {
-				start, end := loc[2*group], loc[2*group+1]
-				substring := s[start:end]
+				substart, subend := loc[2*group], loc[2*group+1]
+				substring := s[substart:subend]
 				result := matcher.Match(substring)
 				if !result.Matched() {
-					prefix, suffix := s[loc[0]:start], s[end:loc[1]]
+					start, end := loc[0], loc[1]
+					prefix, suffix := s[start:substart], s[subend:end]
 					return base.NewResultf(false,
-						"did not match substring[%v:%v]=\"%v[%v]%v\", occurrence #%v (of %v) of pattern \"%v\"",
-						start, end, prefix, substring, suffix, index+1, len(matches), pattern)
+						"did not match substring[%v:%v], [%v:%v]=\"%v[%v]%v\", occurrence #%v (of %v) of pattern \"%v\"",
+						substart, subend, start, end,
+						prefix, substring, suffix, index+1, len(matches), pattern)
 				}
 			}
 			return base.NewResultf(true,
@@ -330,17 +321,56 @@ func AnyPattern(pattern string) func(matcher *base.Matcher) *base.Matcher  {
 	}
 }
 
+
+// Variant of AnyPattern() that uses the given subgroup of the pattern.
+func AnyPatternGroup(pattern string, group int) func(matcher *base.Matcher) *base.Matcher  {
+	re := regexp.MustCompile(pattern)
+	if num := re.NumSubexp(); num < group {
+		println("Illegal group #", group, ": there are only ", num, "groups.") 
+		panic("Group index out of bounds.")
+	}
+	return func(matcher *base.Matcher) *base.Matcher {
+		match := func(s string) *base.Result {
+			matches := re.FindAllStringSubmatchIndex(s, -1)
+			if matches == nil {
+				return base.NewResultf(false,
+					"No occurrences of pattern \"%v\"", pattern)
+			}
+			
+			for index, loc := range matches {
+				substart, subend := loc[2*group], loc[2*group + 1]
+				substring := s[substart:subend]
+				result := matcher.Match(substring)
+				if result.Matched() {
+					start, end := loc[0], loc[1]
+					prefix, suffix := s[start:substart], s[subend:end]
+					return base.NewResultf(true,
+						"matched substring[%v:%v], [%v:%v]=\"%v[%v]%v\", occurrence #%v (of %v) of pattern \"%v\"",
+						substart, subend, start, end,
+						prefix, substring, suffix, index+1, len(matches), pattern)
+				}
+			}
+			return base.NewResultf(false,
+				"Did not match any occurrence (of %v) of pattern \"%v\"",
+				len(matches), pattern)
+		}
+		return base.NewMatcherf(match,
+			"AnyPatternGroup[\"%v\", %v][%v]", pattern, group, matcher)
+	}
+}
+
+
 // Returns a function that applies the matcher to the first occurrence of
 // the pattern in an input string.
 //
 // For example:
-//    FirstInstanceOf("h.s")(EqualTo("his"))
+//    OnPattern("h.s")(EqualTo("his"))
 // would match:
 //    "hers and his" (because the first instance of "h.s" is equal to "his")
 // but none of:
 //    "just hers" (no instances of "h.s")
 //    "has chisel" (the first instance of "h.s" is not "his")
-func FirstInstanceOf(pattern string) func(matcher *base.Matcher) *base.Matcher  {
+func OnPattern(pattern string) func(matcher *base.Matcher) *base.Matcher  {
 	re := regexp.MustCompile(pattern)
 	return func(matcher *base.Matcher) *base.Matcher {
 		match := func(s string) *base.Result {
@@ -357,7 +387,38 @@ func FirstInstanceOf(pattern string) func(matcher *base.Matcher) *base.Matcher  
 				start, end, substring, pattern).WithCauses(result)
 		}
 		return base.NewMatcherf(match,
-			"FirstInstanceOf[\"%v\"][%v]", pattern, matcher)
+			"OnPattern[\"%v\"][%v]", pattern, matcher)
+	}
+}
+
+
+// Variant of OnPattern() that uses the given subgroup of the pattern.
+func OnPatternGroup(pattern string, group int) func(matcher *base.Matcher) *base.Matcher  {
+	re := regexp.MustCompile(pattern)
+	if num := re.NumSubexp(); num < group {
+		println("Illegal group #", group, ": there are only ", num, "groups.") 
+		panic("Group index out of bounds.")
+	}
+	return func(matcher *base.Matcher) *base.Matcher {
+		match := func(s string) *base.Result {
+			loc := re.FindStringSubmatchIndex(s)
+			if loc == nil {
+				return base.NewResultf(false,
+					"No occurrences of pattern \"%v\"", pattern)
+			}
+			start, end := loc[0], loc[1]
+			substart, subend := loc[group*2], loc[group*2+1]
+			prefix := s[start:substart]
+			substring := s[substart:subend]
+			suffix := s[subend:end]
+			result := matcher.Match(substring)
+			return base.NewResultf(result.Matched(),
+				"Found substring[%v:%v], [%v:%v]=\"%v[%v]%v\" for pattern \"%v\"",
+				substart, subend, start, end,
+				prefix, substring, suffix, pattern).WithCauses(result)
+		}
+		return base.NewMatcherf(match,
+			"OnPatternGroup[\"%v\", %v][%v]", pattern, group, matcher)
 	}
 }
 

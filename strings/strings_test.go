@@ -12,7 +12,6 @@ import (
 	"testing"
 )
 
-
 var Matched = base.Matched()
 var DidNotMatch = base.DidNotMatch()
 
@@ -201,10 +200,21 @@ func Test_AnyPattern(t *testing.T) {
 	we.CheckThat("Matt spat at a rat", Not(has_cat_word))
 }
 
-func Test_FirstInstanceOf(t *testing.T) {
+func Test_AnyPatternGroup(t *testing.T) {
 	we := asserter.Using(t)
 	
-	firstGoPlusIsGoo := FirstInstanceOf("Go+")(Is(EqualTo("Goo")))
+	isHappy := AnyPatternGroup("[:;B]-?(.)", 1)(Is(EqualTo(")")))
+	we.CheckThat(isHappy.Match("x :- y+z :-)"), Matched)
+	we.CheckThat(isHappy.Match(":-P :-/ ;-}"), DidNotMatch)
+	we.CheckThat(isHappy.Match("<>v<> o rly?"), DidNotMatch)
+	we.CheckThat(isHappy.Match(123), DidNotMatch)
+	we.CheckThat(isHappy.Match(nil), DidNotMatch)
+}
+
+func Test_OnPattern(t *testing.T) {
+	we := asserter.Using(t)
+	
+	firstGoPlusIsGoo := OnPattern("Go+")(Is(EqualTo("Goo")))
 	we.CheckThat(firstGoPlusIsGoo.Match("take Google to Go"), Matched)
 	we.CheckThat(firstGoPlusIsGoo.Match("take Go to Google"), DidNotMatch)
 	we.CheckThat(firstGoPlusIsGoo.Match("Goooooooal"), DidNotMatch)
@@ -212,11 +222,24 @@ func Test_FirstInstanceOf(t *testing.T) {
 	we.CheckThat(firstGoPlusIsGoo.Match(123), DidNotMatch)
 	we.CheckThat(firstGoPlusIsGoo.Match(nil), DidNotMatch)
 	
-	his := FirstInstanceOf("h.s")(EqualTo("his"))
+	his := OnPattern("h.s")(EqualTo("his"))
 	we.CheckThat(his.Match("hers and his"), Matched)
 	we.CheckThat(his.Match("just hers"), DidNotMatch.
 		Comment("no instances"))
 	we.CheckThat(his.Match("has chisel"), DidNotMatch.
 		Comment("second instance matches, but not first"))
+}
+
+func Test_OnPatternGroup(t *testing.T) {
+	we := asserter.Using(t)
+	
+	americanComedy := OnPatternGroup("hum(ou?)r", 1)(Is(EqualTo("o")))
+	we.CheckThat(americanComedy.Match("scatological humor"), Matched)
+	we.CheckThat(americanComedy.Match("spamalot humour"), DidNotMatch)
+	we.CheckThat(americanComedy.Match("humor I mean humour"), Matched)
+	we.CheckThat(americanComedy.Match("humour I mean humor"), DidNotMatch)
+	we.CheckThat(americanComedy.Match("not funny"), DidNotMatch)
+	we.CheckThat(americanComedy.Match(123), DidNotMatch)
+	we.CheckThat(americanComedy.Match(nil), DidNotMatch)
 }
 
