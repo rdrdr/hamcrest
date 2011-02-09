@@ -233,9 +233,9 @@ func (self *_Asserter) _LogResult(indent string, result *base.Result) {
 	value := result.Value()
 	logger := self.logger
 	if result.Matched() {
-		logger.Logf("%vMATCHED input %v\n", indent, value)
+		logger.Logf("%vMATCHED input: %v\n", indent, value)
 	} else {
-		logger.Logf("%vDID NOT MATCH input %v\n", indent, value)
+		logger.Logf("%vDID NOT MATCH input: %v\n", indent, value)
 	}
 	detailsIndent := indent + "\t"
 	matcher := result.Matcher()
