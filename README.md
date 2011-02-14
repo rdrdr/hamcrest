@@ -88,8 +88,8 @@ Effort invested in good self-describing matchers can be leveraged
 across many tests.
 
 
-Example of using Hamcrest at runtime:
-=====================================
+Examples of using Hamcrest at runtime:
+======================================
 
 Just as in the testing example, create an `Asserter`, but use a factory
 method such as `UsingStderr()`, which returns an `Asserter` that logs
@@ -143,6 +143,22 @@ preconditions are met:
 		we.AssertThat(filename, IsValidFilenameForTextFile)
 		// Use filename here.
 	}
+
+Or use the asserter with `defer` to program by contract, knowing that you
+can later swap out your typical `Asserter` with an
+`asserter.ThatDoesNothing()` to bypass those checks:
+
+	IsWellFormedMD5 := AllOf(
+		ToLen(EqualTo(32)).Comment("MD5 hashes have length 32"),
+		strings.HasPattern("^([0-9][A-F][a-f])+$").Comment("hex digits")))
+	
+	func MD5(data []byte) (result string) {
+		we.AssertNonNil(data)
+		defer we.AssertThat(result, IsWellFormedMD5)
+			
+		// calculate MD5 of data
+	}
+
 
 Or use it during development to write your tests in the same file as your code:
 
