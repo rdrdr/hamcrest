@@ -1,3 +1,10 @@
+Note:
+=====
+This has not been maintained and/or updated since 2011.
+Perhaps consider [corbym/gocrest](https://github.com/corbym/gocrest), instead.
+
+
+
 Introduction
 ============
 
